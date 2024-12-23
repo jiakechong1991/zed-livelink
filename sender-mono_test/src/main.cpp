@@ -488,7 +488,7 @@ nlohmann::json toJSON(int frame_id, uint64_t timestamp, sl::Bodies& bodies, int 
     j["body_format"] = body_format;
     j["is_new"] = (bool)bodies.is_new;
     j["coordinate_system"] = coord_sys;
-    j["coordinate_unit"] = coord_unit;
+    j["coordinate_unit"] = coord_unit;  // // int 描述使用什么坐标系：opengl坐标系，ros坐标系，ue坐标系[
     j["nb_bodies"] = bodies.body_list.size();
 
     if (id < bodies.body_list.size())
