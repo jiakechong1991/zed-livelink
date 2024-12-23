@@ -149,8 +149,159 @@ int main(int argc, char **argv) {
     body_tracking_parameters_rt.skeleton_smoothing = zed_config.skeleton_smoothing;
 
     // Create ZED Bodies filled in the main loop
+    //////////////////////////bodies数据填充！！！！！！！！！
     Bodies bodies;
+    bodies.is_new = true;
+    // std::vector<sl::BodyData> body_list;
+    //////////
+    BodyData body_ins;
+    body_ins.tracking_state = sl::OBJECT_TRACKING_STATE::OK; // int 1:正在追踪中
+    body_ins.action_state = sl::OBJECT_ACTION_STATE::IDLE; // int 0: idel（角色正在idel） 1: 角色正在moving 
+    body_ins.id = 1;  //int 代表人物编号
+    // body 的 三维重心 位置
+    body_ins.position = sl::float3(1.0f, 2.0f, 3.0f); // sl::float3 =等价= Vector3<float>
+    body_ins.confidence = 95; // flaot, 范围：0~100，越低意味着定位置信度越低
 
+    std::vector<float> keypoint_confidence_(38, 100.0f);
+    body_ins.keypoint_confidence = keypoint_confidence_; // std::vector<float> 每个关键点的 置信度
+    // 绝对位置
+    std::vector<sl::float3> keypoint_ = {
+        sl::float3(0.0f, 0.0f, 0.0f), // PELVIS
+        sl::float3(0.0f, 1.0f, 0.0f), // SPINE_1
+        sl::float3(0.0f, 2.0f, 0.0f), // SPINE_2
+        sl::float3(0.0f, 3.0f, 0.0f), // SPINE_3
+        sl::float3(0.0f, 4.0f, 0.0f), // NECK
+        sl::float3(0.0f, 4.5f, 0.0f), // NOSE
+        sl::float3(-0.1f, 4.5f, 0.1f), // LEFT_EYE
+        sl::float3(0.1f, 4.5f, 0.1f), // RIGHT_EYE
+        sl::float3(-0.2f, 4.0f, -0.1f), // LEFT_EAR
+        sl::float3(0.2f, 4.0f, -0.1f), // RIGHT_EAR
+        sl::float3(-0.5f, 3.5f, 0.0f), // LEFT_CLAVICLE
+        sl::float3(0.5f, 3.5f, 0.0f), // RIGHT_CLAVICLE
+        sl::float3(-1.0f, 3.5f, 0.0f), // LEFT_SHOULDER
+        sl::float3(1.0f, 3.5f, 0.0f), // RIGHT_SHOULDER
+        sl::float3(-1.5f, 3.0f, 0.0f), // LEFT_ELBOW
+        sl::float3(1.5f, 3.0f, 0.0f), // RIGHT_ELBOW
+        sl::float3(-2.0f, 2.5f, 0.0f), // LEFT_WRIST
+        sl::float3(2.0f, 2.5f, 0.0f), // RIGHT_WRIST
+        sl::float3(-0.5f, 0.0f, 0.0f), // LEFT_HIP
+        sl::float3(0.5f, 0.0f, 0.0f), // RIGHT_HIP
+        sl::float3(-0.5f, -1.0f, 0.0f), // LEFT_KNEE
+        sl::float3(0.5f, -1.0f, 0.0f), // RIGHT_KNEE
+        sl::float3(-0.5f, -2.0f, 0.0f), // LEFT_ANKLE
+        sl::float3(0.5f, -2.0f, 0.0f), // RIGHT_ANKLE
+        sl::float3(-0.5f, -2.5f, 0.0f), // LEFT_BIG_TOE
+        sl::float3(0.5f, -2.5f, 0.0f), // RIGHT_BIG_TOE
+        sl::float3(-0.5f, -2.5f, -0.1f), // LEFT_SMALL_TOE
+        sl::float3(0.5f, -2.5f, -0.1f), // RIGHT_SMALL_TOE
+        sl::float3(-0.5f, -2.0f, -0.1f), // LEFT_HEEL
+        sl::float3(0.5f, -2.0f, -0.1f), // RIGHT_HEEL
+        sl::float3(-2.0f, 2.5f, 0.1f), // LEFT_HAND_THUMB_4
+        sl::float3(2.0f, 2.5f, 0.1f), // RIGHT_HAND_THUMB_4
+        sl::float3(-2.0f, 2.5f, -0.1f), // LEFT_HAND_INDEX_1
+        sl::float3(2.0f, 2.5f, -0.1f), // RIGHT_HAND_INDEX_1
+        sl::float3(-2.0f, 2.5f, -0.2f), // LEFT_HAND_MIDDLE_4
+        sl::float3(2.0f, 2.5f, -0.2f), // RIGHT_HAND_MIDDLE_4
+        sl::float3(-2.0f, 2.5f, -0.3f), // LEFT_HAND_PINKY_1
+        sl::float3(2.0f, 2.5f, -0.3f) // RIGHT_HAND_PINKY_1
+    };
+    body_ins.keypoint = keypoint_; // std::vector<sl::float3> 检测到的关键点 数组
+
+    // 子关键点位置偏移 相对于 父关键点
+    std::vector<sl::float3> local_position_per_joint_ = {
+        sl::float3(0.0f, 0.0f, 0.0f), // PELVIS
+        sl::float3(0.0f, 1.0f, 0.0f), // SPINE_1
+        sl::float3(0.0f, 2.0f, 0.0f), // SPINE_2
+        sl::float3(0.0f, 3.0f, 0.0f), // SPINE_3
+        sl::float3(0.0f, 4.0f, 0.0f), // NECK
+        sl::float3(0.0f, 4.5f, 0.0f), // NOSE
+        sl::float3(-0.1f, 4.5f, 0.1f), // LEFT_EYE
+        sl::float3(0.1f, 4.5f, 0.1f), // RIGHT_EYE
+        sl::float3(-0.2f, 4.0f, -0.1f), // LEFT_EAR
+        sl::float3(0.2f, 4.0f, -0.1f), // RIGHT_EAR
+        sl::float3(-0.5f, 3.5f, 0.0f), // LEFT_CLAVICLE
+        sl::float3(0.5f, 3.5f, 0.0f), // RIGHT_CLAVICLE
+        sl::float3(-1.0f, 3.5f, 0.0f), // LEFT_SHOULDER
+        sl::float3(1.0f, 3.5f, 0.0f), // RIGHT_SHOULDER
+        sl::float3(-1.5f, 3.0f, 0.0f), // LEFT_ELBOW
+        sl::float3(1.5f, 3.0f, 0.0f), // RIGHT_ELBOW
+        sl::float3(-2.0f, 2.5f, 0.0f), // LEFT_WRIST
+        sl::float3(2.0f, 2.5f, 0.0f), // RIGHT_WRIST
+        sl::float3(-0.5f, 0.0f, 0.0f), // LEFT_HIP
+        sl::float3(0.5f, 0.0f, 0.0f), // RIGHT_HIP
+        sl::float3(-0.5f, -1.0f, 0.0f), // LEFT_KNEE
+        sl::float3(0.5f, -1.0f, 0.0f), // RIGHT_KNEE
+        sl::float3(-0.5f, -2.0f, 0.0f), // LEFT_ANKLE
+        sl::float3(0.5f, -2.0f, 0.0f), // RIGHT_ANKLE
+        sl::float3(-0.5f, -2.5f, 0.0f), // LEFT_BIG_TOE
+        sl::float3(0.5f, -2.5f, 0.0f), // RIGHT_BIG_TOE
+        sl::float3(-0.5f, -2.5f, -0.1f), // LEFT_SMALL_TOE
+        sl::float3(0.5f, -2.5f, -0.1f), // RIGHT_SMALL_TOE
+        sl::float3(-0.5f, -2.0f, -0.1f), // LEFT_HEEL
+        sl::float3(0.5f, -2.0f, -0.1f), // RIGHT_HEEL
+        sl::float3(-2.0f, 2.5f, 0.1f), // LEFT_HAND_THUMB_4
+        sl::float3(2.0f, 2.5f, 0.1f), // RIGHT_HAND_THUMB_4
+        sl::float3(-2.0f, 2.5f, -0.1f), // LEFT_HAND_INDEX_1
+        sl::float3(2.0f, 2.5f, -0.1f), // RIGHT_HAND_INDEX_1
+        sl::float3(-2.0f, 2.5f, -0.2f), // LEFT_HAND_MIDDLE_4
+        sl::float3(2.0f, 2.5f, -0.2f), // RIGHT_HAND_MIDDLE_4
+        sl::float3(-2.0f, 2.5f, -0.3f), // LEFT_HAND_PINKY_1
+        sl::float3(2.0f, 2.5f, -0.3f) // RIGHT_HAND_PINKY_1
+    };
+    body_ins.local_position_per_joint = local_position_per_joint_;// std::vector<sl::float3>
+    // 子关键点朝向向量(四元数)  相对一 父关键点 【目前我是少一个root 关节，我也不确定这样是否对】
+    std::vector<sl::float4> local_orientation_per_joint_ = {
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // PELVIS
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // SPINE_1
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // SPINE_2
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // SPINE_3
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // NECK
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // NOSE
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // LEFT_EYE
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // RIGHT_EYE
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // LEFT_EAR
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // RIGHT_EAR
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // LEFT_CLAVICLE
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // RIGHT_CLAVICLE
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // LEFT_SHOULDER
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // RIGHT_SHOULDER
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // LEFT_ELBOW
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // RIGHT_ELBOW
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // LEFT_WRIST
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // RIGHT_WRIST
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // LEFT_HIP
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // RIGHT_HIP
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // LEFT_KNEE
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // RIGHT_KNEE
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // LEFT_ANKLE
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // RIGHT_ANKLE
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // LEFT_BIG_TOE
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // RIGHT_BIG_TOE
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // LEFT_SMALL_TOE
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // RIGHT_SMALL_TOE
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // LEFT_HEEL
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // RIGHT_HEEL
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // LEFT_HAND_THUMB_4
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // RIGHT_HAND_THUMB_4
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // LEFT_HAND_INDEX_1
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // LEFT_HAND_INDEX_1
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // LEFT_HAND_INDEX_1
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // LEFT_HAND_INDEX_1
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f), // LEFT_HAND_INDEX_1
+        sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f) // LEFT_HAND_INDEX_1
+    };
+    body_ins.local_orientation_per_joint = local_orientation_per_joint_; // std::vector<sl::float4>
+
+    // root 节点的 朝向向量(四元数)
+    body_ins.global_root_orientation =sl::float4(0.0f,  0.80976237f,  0.53984158f, -0.22990426f); // PELVIS
+    // root 节点的位置，使用keypoint[0]的(x,y,z)代替
+    // body_ins.global_root_posititon = // x,y,z
+    
+    //////////
+    bodies.body_list = {body_ins};
+
+
+    /////////////////////////////////////////////////
     bool run = true;
 
     // ----------------------------------
@@ -183,7 +334,7 @@ int main(int argc, char **argv) {
         // 打开相机工作
         auto err =  ERROR_CODE::SUCCESS; // zed.grab(rt_params);
         //std::cout << "FPS : " << zed.getCurrentFPS() << std::endl;
-        std::cout << "新一轮循环开始" <<std::endl;
+        std::cout << "新一轮循环开始---------------------------------" <<std::endl;
         std::this_thread::sleep_for(std::chrono::milliseconds(10)); //
         if (err == ERROR_CODE::SUCCESS)
         {
@@ -215,6 +366,7 @@ int main(int argc, char **argv) {
                             std::string data_to_send = toJSON(frame_id, ts, bodies, i, body_tracking_params.body_format, coord_sys, coord_unit).dump();
                             // 借助标准的UDP协议发送数据
                             sock.sendTo(data_to_send.data(), data_to_send.size(), servAddress, servPort);
+                            std::cout << data_to_send << std::endl;
                             std::cout << "body数据已经发送" << std::endl;
                         }
                     }
@@ -265,7 +417,7 @@ int main(int argc, char **argv) {
 #endif
 
     // Release Bodies
-    bodies.body_list.clear();
+    // bodies.body_list.clear();
 
     // 关闭设备 Disable modules
     //zed.disableBodyTracking();
