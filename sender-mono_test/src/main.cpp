@@ -34,8 +34,8 @@
 
 using namespace sl;
 
-nlohmann::json toJSON(int frame_id, int serial_number, sl::Timestamp timestamp, sl::Pose& cam_pose, sl::COORDINATE_SYSTEM coord_sys, sl::UNIT coord_unit);
-nlohmann::json toJSON(int frame_id, sl::Timestamp timestamp, sl::Bodies& bodies, int id, sl::BODY_FORMAT body_format, sl::COORDINATE_SYSTEM coord_sys, sl::UNIT coord_unit);
+nlohmann::json toJSON(int frame_id, int serial_number, uint64_t timestamp, sl::Pose& cam_pose, sl::COORDINATE_SYSTEM coord_sys, sl::UNIT coord_unit);
+nlohmann::json toJSON(int frame_id, uint64_t timestamp, sl::Bodies& bodies, int id, sl::BODY_FORMAT body_format, sl::COORDINATE_SYSTEM coord_sys, sl::UNIT coord_unit);
 
 void print(string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, string msg_suffix = "");
 
@@ -60,7 +60,7 @@ static const sl::UNIT coord_unit = sl::UNIT::MILLIMETER;
 int main(int argc, char **argv) {
 
     ZEDConfig zed_config;
-    std::string zed_config_file("ZEDLiveLinkConfig.json"); // Default name and location.
+    std::string zed_config_file("../ZEDLiveLinkConfig.json"); // Default name and location.
     if (argc == 2)
     {
         zed_config_file = argv[1];
@@ -184,12 +184,18 @@ int main(int argc, char **argv) {
         auto err =  ERROR_CODE::SUCCESS; // zed.grab(rt_params);
         //std::cout << "FPS : " << zed.getCurrentFPS() << std::endl;
         std::cout << "新一轮循环开始" <<std::endl;
-        std::this_thread::sleep_for(std::chrono::milliseconds(100)); //
+        std::this_thread::sleep_for(std::chrono::milliseconds(10)); //
         if (err == ERROR_CODE::SUCCESS)
         {
-            sl::Timestamp ts = zed.getTimestamp(sl::TIME_REFERENCE::IMAGE);
+            auto now = std::chrono::high_resolution_clock::now(); // 获取当前时间点
+            auto now_as_ns = std::chrono::time_point_cast<std::chrono::nanoseconds>(now); // 将时间点转换为纳秒
+            auto value = now_as_ns.time_since_epoch(); // 获取自纪元以来的时间长度
+            uint64_t ts = std::chrono::duration_cast<std::chrono::duration<uint64_t, std::nano>>(value).count();
+            // uint64_t ts = zed.getTimestamp(sl::TIME_REFERENCE::IMAGE);
+            std::cout << "当前timestamp in nanoseconds: " << ts << std::endl;
             if (zed_config.send_bodies)
-            {          
+            {   
+                std::cout << "进入send bodies阶段" << std::endl;
                 // Retrieve Detected Human Bodies
                 // 将追踪数据赋值到bodies中
                 // zed.retrieveBodies(bodies, body_tracking_parameters_rt);
@@ -198,7 +204,7 @@ int main(int argc, char **argv) {
                 viewer.updateData(bodies, cam_pose.pose_data);
 #endif
 
-                if (bodies.is_new) 
+                if (true) // bodies.is_new
                 {
                     try
                     {
@@ -209,6 +215,7 @@ int main(int argc, char **argv) {
                             std::string data_to_send = toJSON(frame_id, ts, bodies, i, body_tracking_params.body_format, coord_sys, coord_unit).dump();
                             // 借助标准的UDP协议发送数据
                             sock.sendTo(data_to_send.data(), data_to_send.size(), servAddress, servPort);
+                            std::cout << "body数据已经发送" << std::endl;
                         }
                     }
                     catch (SocketException& e)
@@ -219,12 +226,15 @@ int main(int argc, char **argv) {
                 }
             }
 
-            if (zed_config.send_camera_pose)
+            if (true || zed_config.send_camera_pose)
             {
+                std::cout << "进入send camera阶段" << std::endl;
                 // 获得相机位姿
                 // zed.getPosition(cam_pose);
                 // 发送camera位姿数据
-                std::string data_to_send = toJSON(frame_id, zed.getCameraInformation().serial_number, ts, cam_pose, coord_sys, coord_unit).dump();
+                //std::string data_to_send = toJSON(frame_id, zed.getCameraInformation().serial_number, ts, cam_pose, coord_sys, coord_unit).dump();
+                std::string data_to_send = toJSON(frame_id, 8289, ts, cam_pose, coord_sys, coord_unit).dump();
+                std::cout << data_to_send << std::endl;
                 // 借助标准的UDP接口发送数据
                 sock.sendTo(data_to_send.data(), data_to_send.size(), servAddress, servPort);
             }
@@ -247,7 +257,7 @@ int main(int argc, char **argv) {
 
        
         auto stop = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        //std::cout << stop - start << " ms" << std::endl;
+        std::cout << stop - start << " ms" << std::endl;
     }
 
 #if DISPLAY_OGL
@@ -289,13 +299,13 @@ void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
 }
 
 // Create the json sent to the clients
-nlohmann::json toJSON(int frame_id, int serial_number, sl::Timestamp timestamp, sl::Pose& cam_pose, sl::COORDINATE_SYSTEM coord_sys, sl::UNIT coord_unit)
+nlohmann::json toJSON(int frame_id, int serial_number,uint64_t timestamp, sl::Pose& cam_pose, sl::COORDINATE_SYSTEM coord_sys, sl::UNIT coord_unit)
 {
     nlohmann::json j;
 
     j["serial_number"] = serial_number;
     j["frame_id"] = frame_id;
-    j["timestamp"] = timestamp.data_ns;
+    j["timestamp"] = timestamp;
     j["role"] = ZEDLiveLinkRole::Camera;
     j["coordinate_system"] = coord_sys;
     j["coordinate_unit"] = coord_unit;
@@ -316,12 +326,12 @@ nlohmann::json toJSON(int frame_id, int serial_number, sl::Timestamp timestamp, 
 
 
 // send one skeleton at a time
-nlohmann::json toJSON(int frame_id, sl::Timestamp timestamp, sl::Bodies& bodies, int id, sl::BODY_FORMAT body_format, sl::COORDINATE_SYSTEM coord_sys, sl::UNIT coord_unit)
+nlohmann::json toJSON(int frame_id, uint64_t timestamp, sl::Bodies& bodies, int id, sl::BODY_FORMAT body_format, sl::COORDINATE_SYSTEM coord_sys, sl::UNIT coord_unit)
 {
     nlohmann::json j;
 
     j["frame_id"] = frame_id;
-    j["timestamp"] = timestamp.data_ns;
+    j["timestamp"] = timestamp;
     j["role"] = ZEDLiveLinkRole::Animation;
     j["body_format"] = body_format;
     j["is_new"] = (bool)bodies.is_new;

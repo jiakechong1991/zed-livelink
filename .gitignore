@@ -4,3 +4,4 @@ sender-multi-camera/build/
 .vscode/
 build/
 sender-mono_test/build/
+cpp_test/main.bin
