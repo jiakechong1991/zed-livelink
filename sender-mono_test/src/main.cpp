@@ -28,6 +28,10 @@
 #include "Util.h"
 #include <sl/Camera.hpp>
 
+#include <iostream>
+#include <chrono>  // 用于时间单位的定义
+#include <thread>
+
 using namespace sl;
 
 nlohmann::json toJSON(int frame_id, int serial_number, sl::Timestamp timestamp, sl::Pose& cam_pose, sl::COORDINATE_SYSTEM coord_sys, sl::UNIT coord_unit);
@@ -85,13 +89,13 @@ int main(int argc, char **argv) {
     init_parameters.input = zed_config.input;
     init_parameters.svo_real_time_mode = true;
 
-    // Open the camera
-    auto returned_state = zed.open(init_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
-        print("Open Camera", returned_state, "\nExit program.");
-        zed.close();
-        return EXIT_FAILURE;
-    }
+    // // Open the camera 主动关闭
+    // auto returned_state = zed.open(init_parameters);
+    // if (returned_state != ERROR_CODE::SUCCESS) {
+    //     print("Open Camera", returned_state, "\nExit program.");
+    //     zed.close();
+    //     return EXIT_FAILURE;
+    // }
 
     // Enable Positional tracking (mandatory for body tracking) -------------------------------------------------------
     PositionalTrackingParameters positional_tracking_parameters;
@@ -101,13 +105,13 @@ int main(int argc, char **argv) {
     positional_tracking_parameters.enable_pose_smoothing = zed_config.enable_pose_smoothing;
     positional_tracking_parameters.enable_area_memory = zed_config.enable_area_memory;
    
-
-    returned_state = zed.enablePositionalTracking(positional_tracking_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
-        print("enable Positional Tracking", returned_state, "\nExit program.");
-        zed.close();
-        return EXIT_FAILURE;
-    }
+    // 主动关闭
+    // returned_state = zed.enablePositionalTracking(positional_tracking_parameters);
+    // if (returned_state != ERROR_CODE::SUCCESS) {
+    //     print("enable Positional Tracking", returned_state, "\nExit program.");
+    //     zed.close();
+    //     return EXIT_FAILURE;
+    // }
 
 
     BodyTrackingParameters body_tracking_params;
@@ -120,12 +124,13 @@ int main(int argc, char **argv) {
         body_tracking_params.body_format = zed_config.body_format;
         body_tracking_params.detection_model = zed_config.detection_model;
         body_tracking_params.max_range = zed_config.max_range;
-        returned_state = zed.enableBodyTracking(body_tracking_params);
-        if (returned_state != ERROR_CODE::SUCCESS) {
-            print("enable Body Tracking", returned_state, "\nExit program.");
-            zed.close();
-            return EXIT_FAILURE;
-        }
+        // 主动关闭
+        // returned_state = zed.enableBodyTracking(body_tracking_params);
+        // if (returned_state != ERROR_CODE::SUCCESS) {
+        //     print("enable Body Tracking", returned_state, "\nExit program.");
+        //     zed.close();
+        //     return EXIT_FAILURE;
+        // }
 
     }
 
@@ -176,16 +181,18 @@ int main(int argc, char **argv) {
         // 获得当前时间
         auto start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         // 打开相机工作
-        auto err = zed.grab(rt_params);
+        auto err =  ERROR_CODE::SUCCESS; // zed.grab(rt_params);
         //std::cout << "FPS : " << zed.getCurrentFPS() << std::endl;
-
+        std::cout << "新一轮循环开始" <<std::endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(100)); //
         if (err == ERROR_CODE::SUCCESS)
         {
             sl::Timestamp ts = zed.getTimestamp(sl::TIME_REFERENCE::IMAGE);
             if (zed_config.send_bodies)
             {          
                 // Retrieve Detected Human Bodies
-                zed.retrieveBodies(bodies, body_tracking_parameters_rt);
+                // 将追踪数据赋值到bodies中
+                // zed.retrieveBodies(bodies, body_tracking_parameters_rt);
 #if DISPLAY_OGL
                 //Update GL View
                 viewer.updateData(bodies, cam_pose.pose_data);
@@ -214,7 +221,8 @@ int main(int argc, char **argv) {
 
             if (zed_config.send_camera_pose)
             {
-                zed.getPosition(cam_pose);
+                // 获得相机位姿
+                // zed.getPosition(cam_pose);
                 // 发送camera位姿数据
                 std::string data_to_send = toJSON(frame_id, zed.getCameraInformation().serial_number, ts, cam_pose, coord_sys, coord_unit).dump();
                 // 借助标准的UDP接口发送数据
@@ -223,15 +231,15 @@ int main(int argc, char **argv) {
 
             frame_id++;
         }
-        else if (err == sl::ERROR_CODE::END_OF_SVOFILE_REACHED)
-        {
-            frame_id = 0;
-            zed.setSVOPosition(0);
-        }
-        else
-        {
-            print("error grab", returned_state, "\nExit program.");
-        }
+        // else if (err == sl::ERROR_CODE::END_OF_SVOFILE_REACHED)
+        // {
+        //     frame_id = 0;
+        //     zed.setSVOPosition(0);
+        // }
+        // else
+        // {
+        //     print("error grab， Exit program.");
+        // }
 
 #if DISPLAY_OGL
         run = viewer.isAvailable();
@@ -249,10 +257,10 @@ int main(int argc, char **argv) {
     // Release Bodies
     bodies.body_list.clear();
 
-    // Disable modules
-    zed.disableBodyTracking();
-    zed.disablePositionalTracking();
-    zed.close();
+    // 关闭设备 Disable modules
+    //zed.disableBodyTracking();
+    //zed.disablePositionalTracking();
+    //zed.close();
 
     return EXIT_SUCCESS;
 }

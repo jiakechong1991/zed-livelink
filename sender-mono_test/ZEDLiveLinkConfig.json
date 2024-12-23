@@ -2,7 +2,7 @@
   "StreamingParameters":
   {
     "connection_type": "MULTICAST",
-    "ip": "230.0.0.1",
+    "ip": "192.168.1.3",
     "port": 2000,
     "send_bodies": true,
     "send_camera_pose": true

@@ -2,3 +2,5 @@ sender-mono/build/
 sender-multi-camera/build/
 .vs/
 .vscode/
+build/
+sender-mono_test/build/
