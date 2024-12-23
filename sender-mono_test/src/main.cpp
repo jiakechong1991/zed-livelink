@@ -332,11 +332,11 @@ int main(int argc, char **argv) {
         // 获得当前时间
         auto start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         // 打开相机工作
-        auto err =  ERROR_CODE::SUCCESS; // zed.grab(rt_params);
+        // auto err =  ERROR_CODE::SUCCESS; // zed.grab(rt_params);
         //std::cout << "FPS : " << zed.getCurrentFPS() << std::endl;
         std::cout << "新一轮循环开始---------------------------------" <<std::endl;
-        std::this_thread::sleep_for(std::chrono::milliseconds(10)); //
-        if (err == ERROR_CODE::SUCCESS)
+        std::this_thread::sleep_for(std::chrono::milliseconds(1)); //
+        if (true)
         {
             auto now = std::chrono::high_resolution_clock::now(); // 获取当前时间点
             auto now_as_ns = std::chrono::time_point_cast<std::chrono::nanoseconds>(now); // 将时间点转换为纳秒
@@ -403,12 +403,13 @@ int main(int argc, char **argv) {
         //     print("error grab， Exit program.");
         // }
 
-#if DISPLAY_OGL
-        run = viewer.isAvailable();
-#endif
+// #if DISPLAY_OGL
+//         run = viewer.isAvailable();
+// #endif
 
        
         auto stop = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        std::this_thread::sleep_for(std::chrono::milliseconds(25)); //
         std::cout << stop - start << " ms" << std::endl;
     }
 
