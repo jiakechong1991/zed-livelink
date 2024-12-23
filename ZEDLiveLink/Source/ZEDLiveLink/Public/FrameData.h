@@ -66,7 +66,7 @@ public:
     FTransform CameraTransform;
 
     // Animation data
-    TArray<FTransform> BoneTransform;
+    TArray<FTransform> BoneTransform;  // 骨骼动画数据 都在这里
     TArray<int>ParentsIdx;
     int NbKeypoints = -1;
     TMap<int, FName> Keypoints;

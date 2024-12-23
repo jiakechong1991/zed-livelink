@@ -171,9 +171,11 @@ int main(int argc, char **argv) {
     int frame_id = 0;
 
     SetCtrlHandler();
-    while (!exit_app)
+    while (!exit_app)  // 主工作循环
     {
+        // 获得当前时间
         auto start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        // 打开相机工作
         auto err = zed.grab(rt_params);
         //std::cout << "FPS : " << zed.getCurrentFPS() << std::endl;
 
@@ -194,9 +196,11 @@ int main(int argc, char **argv) {
                     try
                     {
                         // send body data one at a time instead of as one single packet.
-                        for (int i = 0; i < bodies.body_list.size(); i++)
+                        // 可能探测到多个身体，对每个身体body进行 数据发送
+                        for (int i = 0; i < bodies.body_list.size(); i++)  
                         {
                             std::string data_to_send = toJSON(frame_id, ts, bodies, i, body_tracking_params.body_format, coord_sys, coord_unit).dump();
+                            // 借助标准的UDP协议发送数据
                             sock.sendTo(data_to_send.data(), data_to_send.size(), servAddress, servPort);
                         }
                     }
@@ -211,7 +215,9 @@ int main(int argc, char **argv) {
             if (zed_config.send_camera_pose)
             {
                 zed.getPosition(cam_pose);
+                // 发送camera位姿数据
                 std::string data_to_send = toJSON(frame_id, zed.getCameraInformation().serial_number, ts, cam_pose, coord_sys, coord_unit).dump();
+                // 借助标准的UDP接口发送数据
                 sock.sendTo(data_to_send.data(), data_to_send.size(), servAddress, servPort);
             }
 

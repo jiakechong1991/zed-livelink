@@ -18,6 +18,7 @@ void FrameData::Deserialize(TSharedRef<TJsonReader<>> Reader)
     bIsValid = false;
     Timestamp = 0;
     // Try to deserialize the JSON data
+    // 这里应该就是解析UDP收到 动捕消息 的位置， 解析动捕消息
     if (FJsonSerializer::Deserialize(Reader, JsonObject))
     {
         // Successfully parsed the JSON data
@@ -137,7 +138,7 @@ void FrameData::Deserialize(TSharedRef<TJsonReader<>> Reader)
                 TargetBones = TargetBone38;
             }
 
-            // Root transform of the skeleton
+            // 解析 Root transform of the skeleton
             auto rootPositionJsonValue = JsonObject->GetObjectField(FString("global_root_posititon"));
             FVector rootPosition = ConvertCoordinateUnitToUE(CoordinateUnit, FVector(rootPositionJsonValue->GetNumberField(FString("x")), rootPositionJsonValue->GetNumberField(FString("y")), rootPositionJsonValue->GetNumberField(FString("z"))));
 
@@ -153,7 +154,7 @@ void FrameData::Deserialize(TSharedRef<TJsonReader<>> Reader)
             {
                 rootOrientation = FQuat::Identity;
             }
-
+            // 解析骨骼的local 姿态
             TArray< TSharedPtr<FJsonValue>> LocalPositions = JsonObject->GetArrayField(FString("local_position_per_joint"));
             TArray< TSharedPtr<FJsonValue>> LocalOrientations = JsonObject->GetArrayField(FString("local_orientation_per_joint"));
 
@@ -162,11 +163,12 @@ void FrameData::Deserialize(TSharedRef<TJsonReader<>> Reader)
             RootTransform.SetRotation(rootOrientation);
             RootTransform.SetLocation(rootPosition);
 
+            // 将root骨骼点的位姿推到 boneTransform中
             RootTransform = ConvertCoordinateSystemToUE(CoordinateSystem, RootTransform);
             BoneTransform.Push(RootTransform);
 
             // Local position and rotation of each keypoint
-            for (int i = 1; i < NbKeypoints; i++)
+            for (int i = 1; i < NbKeypoints; i++)  // 逐个关节，把他们的位姿 push到 BoneTransform中
             {
                 FQuat Orientation = FQuat(LocalOrientations[i]->AsObject()->GetNumberField(FString("x")), LocalOrientations[i]->AsObject()->GetNumberField(FString("y")), LocalOrientations[i]->AsObject()->GetNumberField(FString("z")),
                     LocalOrientations[i]->AsObject()->GetNumberField(FString("w")));
@@ -183,7 +185,7 @@ void FrameData::Deserialize(TSharedRef<TJsonReader<>> Reader)
                 }
 
                 FTransform Transform;
-                Orientation.Normalize();
+                Orientation.Normalize();  // 执行标准化
                 Transform.SetRotation(Orientation);
                 Transform.SetLocation(Position);
 
@@ -193,6 +195,7 @@ void FrameData::Deserialize(TSharedRef<TJsonReader<>> Reader)
                 BoneTransform.Push(Transform);
             }
 
+            // 将每个追踪点的 置信度读取到
             TArray< TSharedPtr<FJsonValue>> KeypointConfidence = JsonObject->GetArrayField(FString("keypoint_confidence"));
 
             for (int i = 0; i < NbKeypoints; i++)
