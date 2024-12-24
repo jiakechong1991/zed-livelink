@@ -57,6 +57,7 @@ void FrameData::Deserialize(TSharedRef<TJsonReader<>> Reader)
         }
         CoordinateUnit = (EZEDCoordinateUnit)value;
 
+        // camera类型 数据
         if (role == (int)EZEDLiveLinkRole::Camera)
         {
             int64 SerialNumber = -1;
@@ -69,6 +70,7 @@ void FrameData::Deserialize(TSharedRef<TJsonReader<>> Reader)
             Subject = "SN" + FString::FromInt(SerialNumber);
             SubjectRole = ULiveLinkCameraRole::StaticClass();
 
+            // 解析camera_position数据
             const TSharedPtr<FJsonObject>* CameraPositionArray;
             if (!JsonObject->TryGetObjectField(FString("camera_position"), CameraPositionArray))
             {
@@ -77,23 +79,26 @@ void FrameData::Deserialize(TSharedRef<TJsonReader<>> Reader)
             }
             FVector CameraPosition = ConvertCoordinateUnitToUE(CoordinateUnit, FVector(CameraPositionArray->Get()->GetNumberField(FString("x")), CameraPositionArray->Get()->GetNumberField(FString("y")), CameraPositionArray->Get()->GetNumberField(FString("z"))));
 
+            // 解析camera_orientation数据
             const TSharedPtr<FJsonObject>* CameraOrientationArray;
             if (!JsonObject->TryGetObjectField(FString("camera_orientation"), CameraOrientationArray))
             {
                 bIsValid = false;
                 return;
             }
+            // 四元数形式
             FQuat CameraOrientation = FQuat(CameraOrientationArray->Get()->GetNumberField(FString("x")), CameraOrientationArray->Get()->GetNumberField(FString("y")),
                 CameraOrientationArray->Get()->GetNumberField(FString("z")), CameraOrientationArray->Get()->GetNumberField(FString("w")));
 
             CameraTransform.SetLocation(CameraPosition);
             CameraTransform.SetRotation(CameraOrientation);
 
+            // 获得camera的位姿数据，并赋值类的属性变量
             CameraTransform = ConvertCoordinateSystemToUE(CoordinateSystem, CameraTransform);
 
             bIsValid = true;
         }
-        else if (role == (int)EZEDLiveLinkRole::Animation)
+        else if (role == (int)EZEDLiveLinkRole::Animation)  // 动画数据类型
         {
             int DetectionID = -1;
 

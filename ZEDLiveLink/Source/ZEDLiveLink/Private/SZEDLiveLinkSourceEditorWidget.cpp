@@ -6,9 +6,10 @@
 
 #define LOCTEXT_NAMESPACE "ZEDLiveLinkSourceEditor"
 
+// 构造函数：  使用SLATE框架创建UI界面，并初始化控件的状态
 void SZEDLiveLinkSourceEditorWidget::Construct(const FArguments& Args)
 {
-	OnSourceCreated = Args._OnSourceCreated;
+	OnSourceCreated = Args._OnSourceCreated; // 从构造参数中获取OnSourceCreated委托
 
 	const float kRowPadding = 3;
 	const float kLabelColMinWidth = 125;
@@ -17,6 +18,7 @@ void SZEDLiveLinkSourceEditorWidget::Construct(const FArguments& Args)
 	ConnectionTypeStrings.Add(MakeShareable<FString>(new FString("Multicast")));
 	ConnectionTypeStrings.Add(MakeShareable<FString>(new FString("Unicast")));
 
+	// 使用SLATE的布局系统创建一个垂直布局的盒子（SVerticalBox）
 	ChildSlot
 		[
 			SNew(SVerticalBox)
@@ -34,8 +36,8 @@ void SZEDLiveLinkSourceEditorWidget::Construct(const FArguments& Args)
 	+ SHorizontalBox::Slot()
 		.HAlign(HAlign_Left)
 		[
-			SAssignNew(IpAddress, SEditableTextBox)
-			.Text(FText::FromString("230.0.0.1:2000"))
+			SAssignNew(IpAddress, SEditableTextBox) // 创建一个可编辑的文本框（SEditableTextBox
+			.Text(FText::FromString("230.0.0.1:2000")) // 设置默认值为"230.0.0.1:2000"
 		.MinDesiredWidth(kEditColMinWidth)
 		]
 		]
@@ -103,16 +105,20 @@ void SZEDLiveLinkSourceEditorWidget::OnConnectionTypeChanged(TSharedPtr<FString>
 		ConnectionType = EZEDLiveLinkConnectionType::Unicast;
 }
 
-
+/*点击创建按钮*/
 FReply SZEDLiveLinkSourceEditorWidget::OnCreateClicked() const
 {
 	FZEDLiveLinkSettings Settings;
+	// 将IP-port解析后，存储在 setttings.endpoint中
     FIPv4Endpoint::Parse(IpAddress.Get()->GetText().ToString(), Settings.Endpoint);
 	Settings.ConnectionType = ConnectionType;
 
+	// 检查 OnSourceCreated委托是否有绑定的回调函数（即是否有其他组件订阅了这个委托）
+	// 如果有，则执行这些回调函数，并将Settings对象作为参数传递
+	// 这是Unreal Engine中委托机制的一个典型用法，用于实现组件间的松耦合通信
 	OnSourceCreated.ExecuteIfBound(Settings);
 
-	return FReply::Handled();
+	return FReply::Handled(); // 表示 按钮点击事件 已经被处理。这可以阻止事件继续冒泡，也可以让UI系统知道不需要进行进一步的处理
 }
 
 

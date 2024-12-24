@@ -21,9 +21,9 @@ class ZEDLIVELINK_API FZEDLiveLinkSource : public ILiveLinkSource, public FRunna
 public:
 	FZEDLiveLinkSource(const FZEDLiveLinkSettings& InSettings);
 
-	virtual ~FZEDLiveLinkSource();
+	virtual ~FZEDLiveLinkSource();  // 析构函数
 
-	// Begin ILiveLinkSource Interface
+	// Begin ILiveLinkSource Interface[接口]
 	
 	virtual void ReceiveClient(ILiveLinkClient* InClient, FGuid InSourceGuid) override;
 
@@ -37,7 +37,7 @@ public:
 
 	// End ILiveLinkSource Interface
 
-	// Begin FRunnable Interface
+	// Begin FRunnable Interface[接口]
 
 	virtual bool Init() override { return true; }
 	virtual uint32 Run() override;
@@ -47,20 +47,22 @@ public:
 
 	// End FRunnable Interface
 
+	// 处理接收的数据
 	void ProcessReceivedData(TSharedPtr<TArray<uint8>> ReceivedData);
 
 private:
 
-	ILiveLinkClient* Client;
+	ILiveLinkClient* Client; //指向LiveLink客户端的指针
 
 	// Our identifier in LiveLink
-	FGuid SourceGuid;
+	FGuid SourceGuid; //源的唯一标识符
 
-	FMessageAddress ConnectionAddress;
+	FMessageAddress ConnectionAddress; //连接地址
 
-	FText SourceType;
+	// 源的类型、机器名称和状态
+	FText SourceType; 
 	FText SourceMachineName;
-	FText SourceStatus;
+	FText SourceStatus;  // Disconnected
 
 	FZEDLiveLinkSettings ZEDSettings;
 	// Socket to receive data on
@@ -78,18 +80,18 @@ private:
 	// Name of the sockets thread
 	FString ThreadName;
 
-	// Time to wait between attempted receives
-	FTimespan WaitTime;
+	// Time to wait between attempted receives 尝试接收之间的等待时间
+	FTimespan WaitTime;  //超过该时间将断开
 
-	// List of subjects we've already encountered
+	// List of subject[角色]s we've already encountered
 	TArray<FName> Subjects;
 
 	// Buffer to receive socket data into
-	TArray<uint8> RecvBuffer;
+	TArray<uint8> RecvBuffer; // 接收套接字数据的缓冲区
 
 	mutable FCriticalSection SubjectsCriticalSection;
 
-	bool FirstConnection = true;
+	bool FirstConnection = true;  // 是否首次连接
 	// Check if static data is setup
 
 	// current timestamp

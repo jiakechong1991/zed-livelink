@@ -12,7 +12,7 @@
 #include "Roles/LiveLinkAnimationTypes.h"
 #include <chrono>
 
-
+// 构造函数，初始化 属性变量 到指定默认值
 FAnimNode_ZEDLiveLinkPose::FAnimNode_ZEDLiveLinkPose()
     : InputPose()
     , LiveLinkSubjectName()
@@ -35,6 +35,9 @@ FAnimNode_ZEDLiveLinkPose::FAnimNode_ZEDLiveLinkPose()
 {
 }
 
+/*
+计算 动捕数据的尺度和UE骨架对比，获得缩放因子
+*/
 float FAnimNode_ZEDLiveLinkPose::ComputeRootTranslationFactor(FCompactPose& OutPose, TArray<FName, TMemStackAllocator<>> TransformedBoneNames, const FLiveLinkAnimationFrameData* InFrameData)
 {
     float avatarTotalTranslation = 0.f;
@@ -87,6 +90,7 @@ FCompactPoseBoneIndex FAnimNode_ZEDLiveLinkPose::GetCPIndex(int32 idx, FCompactP
     return (FCompactPoseBoneIndex)INDEX_NONE;
 }
 
+/*将所有骨骼设置为它们的参考姿势（RefPose），这是骨骼的默认或休息姿势*/
 void FAnimNode_ZEDLiveLinkPose::PutInRefPose(FCompactPose& OutPose, TArray<FName, TMemStackAllocator<>> TransformedBoneNames) {
     for (int32 i = 0; i < TransformedBoneNames.Num(); i++)
     {
@@ -99,6 +103,9 @@ void FAnimNode_ZEDLiveLinkPose::PutInRefPose(FCompactPose& OutPose, TArray<FName
     }
 }
 
+/*
+递归地将休息姿势的旋转应用到骨骼的子结构上，确保整个骨骼链保持正确的相对旋转
+*/
 void FAnimNode_ZEDLiveLinkPose::PropagateRestPoseRotations(int32 parentIdx, FCompactPose& OutPose, TArray<FName, TMemStackAllocator<>> TransformedBoneNames, TArray<int32> SourceBoneParents, FQuat restPoseRot, bool inverse) {
     for (int32 i = 0; i < SourceBoneParents.Num(); i++) {
         FCompactPoseBoneIndex CPIndex = GetCPIndex(i, OutPose, TransformedBoneNames);
@@ -123,22 +130,28 @@ void FAnimNode_ZEDLiveLinkPose::PropagateRestPoseRotations(int32 parentIdx, FCom
     }
 }
 
+/*
+将ZED LiveLink系统的动作捕捉数据应用到Unreal的骨骼上
+*/
 // Take Live Link data and apply it to skeleton bones in UE.
-void FAnimNode_ZEDLiveLinkPose::BuildPoseFromZEDAnimationData(float DeltaTime,
-    const FLiveLinkSkeletonStaticData* InSkeletonData,
-    const FLiveLinkAnimationFrameData* InFrameData,
-    FCompactPose& OutPose)
+void FAnimNode_ZEDLiveLinkPose::BuildPoseFromZEDAnimationData(
+    float DeltaTime, // 自上次更新以来经过的时间
+    const FLiveLinkSkeletonStaticData* InSkeletonData, // 包含骨骼的静态数据，如骨骼名称和父骨骼索引
+    const FLiveLinkAnimationFrameData* InFrameData, // 当前采集到的动作数据
+    FCompactPose& OutPose  // 用于输出最终骨骼姿势的对象
+    )
 {
-    const TArray<FName>& SourceBoneNames = InSkeletonData->BoneNames;
-    const TArray<int32>& SourceBoneParents = InSkeletonData->BoneParents;
+    const TArray<FName>& SourceBoneNames = InSkeletonData->BoneNames;  // 骨骼名称
+    const TArray<int32>& SourceBoneParents = InSkeletonData->BoneParents;  // 父索引数组
 
     TArray<FName, TMemStackAllocator<>> TransformedBoneNames;
     TransformedBoneNames.Reserve(SourceBoneNames.Num());
 
 
-    if (NbKeypoints < 0) // only the first time.
+    if (NbKeypoints < 0) // only the first time. 类初始化时，设置为了-1，所以只运行一次
     {
         // Check the size of the input data to know which body format is used.
+        // 根据livelink的数据帧，选择骨架
         if (InFrameData->Transforms.Num() == Keypoints38.Num() * 2) // body_38
         {
             NbKeypoints = 38;
@@ -184,6 +197,8 @@ void FAnimNode_ZEDLiveLinkPose::BuildPoseFromZEDAnimationData(float DeltaTime,
     }
 
     // Apply an offset to put the feet of the ground and offset "floating" avatars.
+    /* 如果启用了bStickAvatarOnFloor选项，计算角色 脚部到地面的距离
+    */
     if (bStickAvatarOnFloor && InFrameData->Transforms[NbKeypoints / 2 + *Keypoints.FindKey(FName("LEFT_ANKLE"))].GetLocation().X > 0 && InFrameData->Transforms[NbKeypoints / 2 + *Keypoints.FindKey(FName("RIGHT_ANKLE"))].GetLocation().X > 0) { //if both foot are visible/detected
         if (SkeletalMesh) {
 
@@ -249,13 +264,16 @@ void FAnimNode_ZEDLiveLinkPose::BuildPoseFromZEDAnimationData(float DeltaTime,
         AutomaticHeightOffset = 0;
     }
 
+    // 将骨骼 设置成 参考姿势
     PutInRefPose(OutPose, TransformedBoneNames);
+    
+    // 读取root骨骼，如果root有效，则对上面的子-joint应用 pose旋转和偏移
     FCompactPoseBoneIndex CPIndexRoot = GetCPIndex(0, OutPose, TransformedBoneNames);
-
     if (CPIndexRoot != INDEX_NONE)
         PropagateRestPoseRotations(0, OutPose, TransformedBoneNames, SourceBoneParents, OutPose.GetRefPose(CPIndexRoot).GetRotation(), false);
 
     // Iterate over remapped bone names, find the index of that bone on the skeleton, and apply the Live Link pose data.
+    // 从root-joint开始，应用正向运动学，扭转子-joint的位姿
     for (int32 i = 0; i < TransformedBoneNames.Num(); i++)
     {
         FName BoneName = TransformedBoneNames[i];
@@ -269,8 +287,8 @@ void FAnimNode_ZEDLiveLinkPose::BuildPoseFromZEDAnimationData(float DeltaTime,
                 FVector Translation;
 
                 // Only use position + rotation data for root. For all other bones, set rotation only.
-                if (BoneName == (*CurBoneNameMap)[GetTargetRootName()])
-                {
+                if (BoneName == (*CurBoneNameMap)[GetTargetRootName()]) // 如果是root-joint
+                {   // 骨骼是根骨骼，则计算位置和旋转，并应用缩放因子
                     float rootScaleFactor = ComputeRootTranslationFactor(OutPose, TransformedBoneNames, InFrameData);
 
                     FVector RootPosition = BoneTransform.GetTranslation();
@@ -286,8 +304,9 @@ void FAnimNode_ZEDLiveLinkPose::BuildPoseFromZEDAnimationData(float DeltaTime,
 
                     Rotation = BoneTransform.GetRotation();
                 }
-                else
+                else  
                 {
+                    // 非根骨骼，只设置旋转
                     Rotation = BoneTransform.GetRotation();
                     Translation = OutPose[CPIndex].GetTranslation();
                 }

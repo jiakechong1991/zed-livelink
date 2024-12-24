@@ -78,6 +78,7 @@ private: //私有函数
 
 	// This is the bone we will apply position translation to.
 	// The root in our case is the pelvis (0)
+	// root-joint的名称
 	FName GetTargetRootName() const { return "PELVIS"; }
 
 	ILiveLinkClient* LiveLinkClient_AnyThread;
@@ -98,7 +99,7 @@ private: //私有函数
 
     float DistanceToFloorThreshold = 1.0f; // cm 距离地面的阈值
 
-	float AutomaticHeightOffset = 0; 
+	float AutomaticHeightOffset = 0;  // 根据动作数据，计算的 角色脚部到地面的距离
 };
 
 PRAGMA_ENABLE_DEPRECATION_WARNINGS  // 重新开启 编译器 的 弃用警告

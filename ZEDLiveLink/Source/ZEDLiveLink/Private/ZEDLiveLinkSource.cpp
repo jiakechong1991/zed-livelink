@@ -76,6 +76,7 @@ FZEDLiveLinkSource::FZEDLiveLinkSource(const FZEDLiveLinkSettings& InSettings)
 	}
 }
 
+// 析构函数
 FZEDLiveLinkSource::~FZEDLiveLinkSource()
 {
 	Stop();
@@ -98,6 +99,7 @@ void FZEDLiveLinkSource::ReceiveClient(ILiveLinkClient* InClient, FGuid InSource
 	SourceGuid = InSourceGuid;
 }
 
+// 判断source是否有效
 bool FZEDLiveLinkSource::IsSourceStillValid() const
 {
 	// Source is valid if we have a valid thread and socket
@@ -105,6 +107,7 @@ bool FZEDLiveLinkSource::IsSourceStillValid() const
 	return bIsSourceValid;
 }
 
+// 主动关闭source
 bool FZEDLiveLinkSource::RequestSourceShutdown()
 {
 	Stop();
@@ -119,9 +122,17 @@ void FZEDLiveLinkSource::Start()
 {
 	bIsRunning = true;
 
-	ThreadName = "ZED UDP Receiver ";
+	ThreadName = "ZED UDP Receiver ";  // 线程名称
 	ThreadName.AppendInt(FAsyncThreadIndex::GetNext());
 	
+	// 创建一个线程，这个线程就是this指向的当前类,在新线程中，将调用该对象的Run方法（FRunnable对象的Run方法）
+	// 这样，FZEDLiveLinkSource对象就可以在其自己的线程中执行，而不会阻塞主线程
+	/*
+	this：指向当前FZEDLiveLinkSource对象的指针，这个对象实现了FRunnable接口。
+	*ThreadName：上面构造的线程名称。
+	0：堆栈大小，这里设置为0，表示使用默认堆栈大小。
+	TPri_AboveNormal：线程的优先级，这里设置为高于正常优先级
+	*/
 	Thread = FRunnableThread::Create(this, *ThreadName, 0, TPri_AboveNormal);
 }
 
@@ -130,12 +141,12 @@ void FZEDLiveLinkSource::Stop()
 	bIsRunning = false;
 }
 
-uint32 FZEDLiveLinkSource::Run()
+uint32 FZEDLiveLinkSource::Run()  // 在线程中，独立运行
 {
 	TSharedRef<FInternetAddr> Sender = SocketSubsystem->CreateInternetAddr();
 	while (bIsRunning)
 	{
-		if (Socket->Wait(ESocketWaitConditions::WaitForRead, WaitTime))
+		if (Socket->Wait(ESocketWaitConditions::WaitForRead, WaitTime))  // 等待UDP数据(最大超时500ms)
 		{
 			FirstConnection = false;
 			SourceStatus = LOCTEXT("SourceStatus_Connected", "Connected");
@@ -144,6 +155,7 @@ uint32 FZEDLiveLinkSource::Run()
 			{
 				int32 Read = 0;
 				RecvBuffer.SetNumUninitialized(FMath::Min(Size, 65507u)); // max size of UDP packet
+				// 从UDP中读取 指定长度的 数据
 				bool recv = Socket->RecvFrom(RecvBuffer.GetData(), RecvBuffer.Num(), Read, *Sender);
 				if (recv)
 				{
@@ -152,7 +164,10 @@ uint32 FZEDLiveLinkSource::Run()
 						TSharedPtr<TArray<uint8>, ESPMode::ThreadSafe> ReceivedData = MakeShareable(new TArray<uint8>());
 						ReceivedData->SetNumUninitialized(Read);
 						memcpy(ReceivedData->GetData(), RecvBuffer.GetData(), Read);
-						AsyncTask(ENamedThreads::GameThread, [this, ReceivedData]() { ProcessReceivedData(ReceivedData); });
+						// 在GameThread线程中，用ProcessReceivedData函数，对 接收到的数据进行处理
+						AsyncTask(ENamedThreads::GameThread, [this, ReceivedData]() { 
+							ProcessReceivedData(ReceivedData); 
+							});
 					}
 				}
 			}
@@ -180,6 +195,7 @@ void FZEDLiveLinkSource::ProcessReceivedData(TSharedPtr<TArray<uint8>> ReceivedD
 		recvedString += TCHAR(Byte);
 	}
 
+	// 这一行，对接收到 livelink数据进行解析
 	FrameData frameData = FrameData(recvedString);
 	FName SubjectName = FName(*frameData.Subject);
 
