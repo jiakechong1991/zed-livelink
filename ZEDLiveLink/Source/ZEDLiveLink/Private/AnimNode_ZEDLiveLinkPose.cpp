@@ -367,7 +367,7 @@ void FAnimNode_ZEDLiveLinkPose::Evaluate_AnyThread(FPoseContext& Output)
 {
     InputPose.Evaluate(Output);
 
-    if (!LiveLinkClient_AnyThread)
+    if (!LiveLinkClient_AnyThread) // 检查livelink线程是否有效
     {
         return;
     }
@@ -380,6 +380,7 @@ void FAnimNode_ZEDLiveLinkPose::Evaluate_AnyThread(FPoseContext& Output)
         if (LiveLinkClient_AnyThread->DoesSubjectSupportsRole_AnyThread(LiveLinkSubjectName, ULiveLinkAnimationRole::StaticClass()))
         {
             //Process animation data if the subject is from that type
+            // 数据就这样从livelink中来到了这个线程中
             if (LiveLinkClient_AnyThread->EvaluateFrame_AnyThread(LiveLinkSubjectName, ULiveLinkAnimationRole::StaticClass(), SubjectFrameData))
             {
                 FLiveLinkSkeletonStaticData* SkeletonData = SubjectFrameData.StaticData.Cast<FLiveLinkSkeletonStaticData>();
