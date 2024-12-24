@@ -536,6 +536,8 @@ static FName GetParent34BoneName(FName BoneName)
 	return ParentBoneName;
 }
 
+// 这里定义了zed骨架和UE骨架的 joint对应关系
+/*输入zed-joint名称，获得ue对应joint的名称*/
 static FName GetParent38BoneName(FName BoneName)
 {
 	FName ParentBoneName = "None";

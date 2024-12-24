@@ -2,7 +2,7 @@
 #include "EdGraph/EdGraphSchema.h"
 #include "Animation/AnimAttributes.h"
 
-#define LOCTEXT_NAMESPACE "ZEDAnimNode"
+#define LOCTEXT_NAMESPACE "ZEDAnimNode" //定义本地化文本的命名空间，便于翻译
 
 FText UAnimGraphNode_ZEDLiveLinkPose::GetNodeTitle(ENodeTitleType::Type TitleType) const
 {

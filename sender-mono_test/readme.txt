@@ -1,5 +1,10 @@
 
 
+
+这是官方出的一篇很好的文章，解释如何使用
+https://www.stereolabs.com/docs/ue5/body-tracking  
+
+
 #################camera的 UDP数据，就是下面一个json str  (json网站可以对其进行格式化，是标准json)
 {"camera_orientation":{"w":1.0,"x":0.0,"y":0.0,"z":0.0},"camera_position":{"x":0.0,"y":0.0,"z":0.0},"coordinate_system":2,"coordinate_unit":0,"frame_id":2002,"role":1,"serial_number":8289,"timestamp":1734958710410477382}
 
