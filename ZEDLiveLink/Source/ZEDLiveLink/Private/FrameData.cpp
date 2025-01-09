@@ -13,7 +13,7 @@ FrameData::FrameData(FString frameData)
 void FrameData::Deserialize(TSharedRef<TJsonReader<>> Reader)
 {
     // Create a variable to store the parsed JSON data
-    TSharedPtr<FJsonObject> JsonObject;
+    TSharedPtr<FJsonObject> JsonObject;  // 解析后的就保存在这个json中
 
     bIsValid = false;
     Timestamp = 0;
@@ -159,7 +159,7 @@ void FrameData::Deserialize(TSharedRef<TJsonReader<>> Reader)
             {
                 rootOrientation = FQuat::Identity;
             }
-            // 解析骨骼的local 姿态
+            // 解析骨骼的local 姿态:  位置 和朝向
             TArray< TSharedPtr<FJsonValue>> LocalPositions = JsonObject->GetArrayField(FString("local_position_per_joint"));
             TArray< TSharedPtr<FJsonValue>> LocalOrientations = JsonObject->GetArrayField(FString("local_orientation_per_joint"));
 
@@ -167,7 +167,8 @@ void FrameData::Deserialize(TSharedRef<TJsonReader<>> Reader)
             rootOrientation.Normalize();
             RootTransform.SetRotation(rootOrientation);
             RootTransform.SetLocation(rootPosition);
-
+            
+            //
             // 将root骨骼点的位姿推到 boneTransform中
             RootTransform = ConvertCoordinateSystemToUE(CoordinateSystem, RootTransform);
             BoneTransform.Push(RootTransform);
@@ -175,9 +176,16 @@ void FrameData::Deserialize(TSharedRef<TJsonReader<>> Reader)
             // Local position and rotation of each keypoint
             for (int i = 1; i < NbKeypoints; i++)  // 逐个关节，把他们的位姿 push到 BoneTransform中
             {
-                FQuat Orientation = FQuat(LocalOrientations[i]->AsObject()->GetNumberField(FString("x")), LocalOrientations[i]->AsObject()->GetNumberField(FString("y")), LocalOrientations[i]->AsObject()->GetNumberField(FString("z")),
+                FQuat Orientation = FQuat(
+                    LocalOrientations[i]->AsObject()->GetNumberField(FString("x")), 
+                    LocalOrientations[i]->AsObject()->GetNumberField(FString("y")), 
+                    LocalOrientations[i]->AsObject()->GetNumberField(FString("z")),
                     LocalOrientations[i]->AsObject()->GetNumberField(FString("w")));
-                FVector Position = ConvertCoordinateUnitToUE(CoordinateUnit, FVector(LocalPositions[i]->AsObject()->GetNumberField(FString("x")), LocalPositions[i]->AsObject()->GetNumberField(FString("y")),
+                
+                FVector Position = ConvertCoordinateUnitToUE(
+                    CoordinateUnit, 
+                    FVector(LocalPositions[i]->AsObject()->GetNumberField(FString("x")), 
+                    LocalPositions[i]->AsObject()->GetNumberField(FString("y")),
                     LocalPositions[i]->AsObject()->GetNumberField(FString("z"))));
 
                 if (Position.ContainsNaN())

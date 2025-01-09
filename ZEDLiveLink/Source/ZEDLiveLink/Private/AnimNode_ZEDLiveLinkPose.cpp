@@ -141,9 +141,11 @@ void FAnimNode_ZEDLiveLinkPose::BuildPoseFromZEDAnimationData(
     FCompactPose& OutPose  // 用于输出最终骨骼姿势的对象
     )
 {
+    // 这是ue角色的属性
     const TArray<FName>& SourceBoneNames = InSkeletonData->BoneNames;  // 骨骼名称
     const TArray<int32>& SourceBoneParents = InSkeletonData->BoneParents;  // 父索引数组
 
+    // 角色joint和动捕joint能匹配上的点
     TArray<FName, TMemStackAllocator<>> TransformedBoneNames;
     TransformedBoneNames.Reserve(SourceBoneNames.Num());
 
@@ -157,7 +159,7 @@ void FAnimNode_ZEDLiveLinkPose::BuildPoseFromZEDAnimationData(
             NbKeypoints = 38;
             Keypoints = Keypoints38;
             ParentsIdx = Parents38Idx;
-            CurBoneNameMap = &BoneNameMap38;
+            CurBoneNameMap = &BoneNameMap38; //骨骼映射map
         }
         else if (InFrameData->Transforms.Num() == Keypoints34.Num() * 2)// BODY_34
         {

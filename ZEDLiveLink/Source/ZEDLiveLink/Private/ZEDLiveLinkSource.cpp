@@ -187,7 +187,7 @@ uint32 FZEDLiveLinkSource::Run()  // 在线程中，独立运行
 void FZEDLiveLinkSource::ProcessReceivedData(TSharedPtr<TArray<uint8>> ReceivedData)
 {
 	/// CONVERTNG TO STRING
-	FString recvedString;
+	FString recvedString;  // 原始数据在这里
 	int32 Read = ReceivedData->Num();
 	recvedString.Empty(ReceivedData->Num());
 	for (uint8& Byte : *ReceivedData.Get())

@@ -16,7 +16,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
         sleep(1)  # 粗糙的控制帧率
 
  
- 
+
 if __name__ == '__main__':
     print("udp client ")
     main()
