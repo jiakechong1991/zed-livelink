@@ -1,5 +1,6 @@
 sender-mono/build/
 sender-multi-camera/build/
+sender_python/__pycache__/
 .vs/
 .vscode/
 build/
