@@ -50,6 +50,8 @@ FZEDLiveLinkSource::FZEDLiveLinkSource(const FZEDLiveLinkSettings& InSettings)
 			.JoinedToGroup(ZEDSettings.Endpoint.Address)
 			.WithMulticastLoopback()
 			.WithMulticastTtl(2);
+		UE_LOG(LogTemp, Warning, TEXT("Connect111 to %s : %d"), *ZEDSettings.Endpoint.Address.ToString(), ZEDSettings.Endpoint.Port);
+
 					
 	}
 	else
@@ -61,7 +63,7 @@ FZEDLiveLinkSource::FZEDLiveLinkSource(const FZEDLiveLinkSettings& InSettings)
 			.BoundToPort(ZEDSettings.Endpoint.Port)
 			.WithReceiveBufferSize(RECV_BUFFER_SIZE);
 
-			//UE_LOG(LogTemp, Warning, TEXT("Connect to %s : %d"), *ZEDSettings.Endpoint.Address.ToString(), ZEDSettings.Endpoint.Port);
+			UE_LOG(LogTemp, Warning, TEXT("Connect222 to %s : %d"), *ZEDSettings.Endpoint.Address.ToString(), ZEDSettings.Endpoint.Port);
 	}
 
 	RecvBuffer.SetNumUninitialized(RECV_BUFFER_SIZE);
@@ -146,6 +148,7 @@ uint32 FZEDLiveLinkSource::Run()  // 在线程中，独立运行
 	TSharedRef<FInternetAddr> Sender = SocketSubsystem->CreateInternetAddr();
 	while (bIsRunning)
 	{
+		
 		if (Socket->Wait(ESocketWaitConditions::WaitForRead, WaitTime))  // 等待UDP数据(最大超时500ms)
 		{
 			FirstConnection = false;
@@ -204,21 +207,21 @@ void FZEDLiveLinkSource::ProcessReceivedData(TSharedPtr<TArray<uint8>> ReceivedD
 	FLiveLinkSubjectKey Key = FLiveLinkSubjectKey(SourceGuid, SubjectName);
 	if (Client && bIsRunning)
 	{
-		if (frameData.bIsValid) 
+		if (frameData.bIsValid) // 解析数据有效
 		{
 			if (CurrentTimeStamp - frameData.Timestamp > 0) // clean all subjects when current ts > new ts. It happens if a SVO loops for example.
 			{
 				ClearSubjects();
 			}
 			else if (frameData.SubjectRole == ULiveLinkAnimationRole::StaticClass() && frameData.BodyTrackingState != EZEDTrackingState::Ok)
-			{
+			{ // 动作类型，但是已经追踪失败
 				Client->RemoveSubject_AnyThread(Key);
 				FScopeLock Lock(&SubjectsCriticalSection);
 				{
 					Subjects.Remove(SubjectName);
 				}
 			}
-			else
+			else  // 正常追踪中
 			{
 				TArray<FLiveLinkSubjectKey> SubjectsKey;
 				FScopeLock Lock(&SubjectsCriticalSection);
@@ -236,7 +239,7 @@ void FZEDLiveLinkSource::ProcessReceivedData(TSharedPtr<TArray<uint8>> ReceivedD
 						//Preset.bEnabled = true;
 
 						if (Client->GetSources().Num() > 0)
-						{
+						{ // 创建角色
 							FScopeLock LockClient(&SubjectsCriticalSection);
 							{
 								Client->CreateSubject(Preset);
@@ -271,6 +274,7 @@ void FZEDLiveLinkSource::ProcessReceivedData(TSharedPtr<TArray<uint8>> ReceivedD
 					FrameData = FLiveLinkAnimationFrameData::StaticStruct();
 					FLiveLinkAnimationFrameData& AnimData = *FrameData.Cast<FLiveLinkAnimationFrameData>();
 
+					// 使用动捕数据，更新到角色的transform
 					AnimData.WorldTime = FPlatformTime::Seconds();
 					AnimData.Transforms = frameData.BoneTransform;
 				}

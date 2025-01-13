@@ -37,7 +37,7 @@ void SZEDLiveLinkSourceEditorWidget::Construct(const FArguments& Args)
 		.HAlign(HAlign_Left)
 		[
 			SAssignNew(IpAddress, SEditableTextBox) // 创建一个可编辑的文本框（SEditableTextBox
-			.Text(FText::FromString("230.0.0.1:2000")) // 设置默认值为"230.0.0.1:2000"
+			.Text(FText::FromString("192.168.1.13:3001")) // 设置默认值为"230.0.0.1:2000"
 		.MinDesiredWidth(kEditColMinWidth)
 		]
 		]

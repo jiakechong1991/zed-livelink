@@ -17,6 +17,8 @@ void FrameData::Deserialize(TSharedRef<TJsonReader<>> Reader)
 
     bIsValid = false;
     Timestamp = 0;
+    UE_LOG(LogTemp, Warning, TEXT("i will parse data!!!"));
+    UE_LOG(LogTemp, Warning, TEXT("即将解析从UDP读取到的动捕数据!!!"));
     // Try to deserialize the JSON data
     // 这里应该就是解析UDP收到 动捕消息 的位置， 解析动捕消息
     if (FJsonSerializer::Deserialize(Reader, JsonObject))
@@ -145,33 +147,44 @@ void FrameData::Deserialize(TSharedRef<TJsonReader<>> Reader)
 
             // 解析 Root transform of the skeleton
             auto rootPositionJsonValue = JsonObject->GetObjectField(FString("global_root_posititon"));
+            // 缩放了0.1
             FVector rootPosition = ConvertCoordinateUnitToUE(CoordinateUnit, FVector(rootPositionJsonValue->GetNumberField(FString("x")), rootPositionJsonValue->GetNumberField(FString("y")), rootPositionJsonValue->GetNumberField(FString("z"))));
 
             auto rootOrientationJsonValue = JsonObject->GetObjectField(FString("global_root_orientation"));
-            FQuat rootOrientation = FQuat(rootOrientationJsonValue->GetNumberField(FString("x")), rootOrientationJsonValue->GetNumberField(FString("y")), rootOrientationJsonValue->GetNumberField(FString("z")),
-                rootOrientationJsonValue->GetNumberField(FString("w")));
+            FQuat rootOrientation = FQuat(
+                rootOrientationJsonValue->GetNumberField(FString("x")), 
+                rootOrientationJsonValue->GetNumberField(FString("y")), 
+                rootOrientationJsonValue->GetNumberField(FString("z")),
+                rootOrientationJsonValue->GetNumberField(FString("w"))
+            );
 
             if (rootPosition.ContainsNaN())
             {
                 rootPosition = FVector::ZeroVector;
+                UE_LOG(LogTemp, Warning, TEXT("--bbb-我到这里了吗？11"));
+            }
+            else{
+                UE_LOG(LogTemp, Warning, TEXT("--bbb-打印一下: %s"), *rootPosition.ToString());
             }
             if (rootOrientation.ContainsNaN())
             {
                 rootOrientation = FQuat::Identity;
             }
             // 解析骨骼的local 姿态:  位置 和朝向
-            TArray< TSharedPtr<FJsonValue>> LocalPositions = JsonObject->GetArrayField(FString("local_position_per_joint"));
-            TArray< TSharedPtr<FJsonValue>> LocalOrientations = JsonObject->GetArrayField(FString("local_orientation_per_joint"));
+            TArray< TSharedPtr<FJsonValue>> LocalPositions = JsonObject->GetArrayField(
+                FString("local_position_per_joint"));
+            TArray< TSharedPtr<FJsonValue>> LocalOrientations = JsonObject->GetArrayField(
+                FString("local_orientation_per_joint"));
 
             FTransform RootTransform;
             rootOrientation.Normalize();
             RootTransform.SetRotation(rootOrientation);
             RootTransform.SetLocation(rootPosition);
             
-            //
             // 将root骨骼点的位姿推到 boneTransform中
             RootTransform = ConvertCoordinateSystemToUE(CoordinateSystem, RootTransform);
             BoneTransform.Push(RootTransform);
+            UE_LOG(LogTemp, Warning, TEXT("--bbb---%s"), *RootTransform.ToString());
 
             // Local position and rotation of each keypoint
             for (int i = 1; i < NbKeypoints; i++)  // 逐个关节，把他们的位姿 push到 BoneTransform中
@@ -202,7 +215,7 @@ void FrameData::Deserialize(TSharedRef<TJsonReader<>> Reader)
                 Transform.SetRotation(Orientation);
                 Transform.SetLocation(Position);
 
-                //UE_LOG(LogTemp, Warning, TEXT("%s"), *Transform.ToString());
+                UE_LOG(LogTemp, Warning, TEXT("--bbb-%d---%s"), i,*Transform.ToString());
                 Transform = ConvertCoordinateSystemToUE(CoordinateSystem, Transform);
 
                 BoneTransform.Push(Transform);
@@ -303,6 +316,7 @@ FTransform FrameData::ConvertCoordinateSystemToUE(EZEDCoordinateSystem InFrame, 
 }
 
 //Convert vector to UE coordinate unit (centimeter)
+// 这是单位缩放（比如输入值是1，这个1单位是什么呢？）
 FVector FrameData::ConvertCoordinateUnitToUE(EZEDCoordinateUnit InUnit, FVector InVector)
 {
     float factor = 1;
@@ -315,10 +329,10 @@ FVector FrameData::ConvertCoordinateUnitToUE(EZEDCoordinateUnit InUnit, FVector 
         case EZEDCoordinateUnit::Centimeter:
             factor = 1;
             break;
-        case EZEDCoordinateUnit::Millimeter:
+        case EZEDCoordinateUnit::Millimeter: // 将输入值 乘以0.1,相当于缩小 变为原来的1/10
             factor = 0.1f;
             break;
-        case EZEDCoordinateUnit::Inch:
+        case EZEDCoordinateUnit::Inch: // 放大为了 数值值的 2.54倍
             factor = 2.54f;
             break;
         case EZEDCoordinateUnit::Foot:
