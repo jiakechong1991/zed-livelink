@@ -78,7 +78,8 @@ float FAnimNode_ZEDLiveLinkPose::ComputeRootTranslationFactor(FCompactPose& OutP
     return FMath::Abs(scale * factor);
 }
 
-FCompactPoseBoneIndex FAnimNode_ZEDLiveLinkPose::GetCPIndex(int32 idx, FCompactPose& OutPose, TArray<FName, TMemStackAllocator<>> TransformedBoneNames) {
+FCompactPoseBoneIndex FAnimNode_ZEDLiveLinkPose::GetCPIndex(int32 idx, FCompactPose& OutPose, 
+    TArray<FName, TMemStackAllocator<>> TransformedBoneNames) {
     FName BoneName = TransformedBoneNames[idx];
     const int32 MeshIndex = OutPose.GetBoneContainer().GetPoseBoneIndexForBoneName(BoneName);
     if (MeshIndex != INDEX_NONE)
@@ -91,12 +92,14 @@ FCompactPoseBoneIndex FAnimNode_ZEDLiveLinkPose::GetCPIndex(int32 idx, FCompactP
 }
 
 /*将所有骨骼设置为它们的参考姿势（RefPose），这是骨骼的默认或休息姿势*/
-void FAnimNode_ZEDLiveLinkPose::PutInRefPose(FCompactPose& OutPose, TArray<FName, TMemStackAllocator<>> TransformedBoneNames) {
+void FAnimNode_ZEDLiveLinkPose::PutInRefPose(FCompactPose& OutPose, TArray<FName, 
+    TMemStackAllocator<>> TransformedBoneNames) { // joint-match 列表
     for (int32 i = 0; i < TransformedBoneNames.Num(); i++)
     {
         FCompactPoseBoneIndex CPIndex = GetCPIndex(i, OutPose, TransformedBoneNames);
         if (CPIndex != INDEX_NONE)
         {
+            // 设置默认pose
             auto RefBoneTransform = OutPose.GetRefPose(CPIndex);
             OutPose[CPIndex].SetRotation(RefBoneTransform.GetRotation());
         }
@@ -145,7 +148,7 @@ void FAnimNode_ZEDLiveLinkPose::BuildPoseFromZEDAnimationData(
     const TArray<FName>& SourceBoneNames = InSkeletonData->BoneNames;  // 骨骼名称
     const TArray<int32>& SourceBoneParents = InSkeletonData->BoneParents;  // 父索引数组
 
-    // 角色joint和动捕joint能匹配上的点
+    // 角色joint和动捕joint能匹配上的点,匹配不上，就用"" 代替
     TArray<FName, TMemStackAllocator<>> TransformedBoneNames;
     TransformedBoneNames.Reserve(SourceBoneNames.Num());
 
@@ -281,6 +284,7 @@ void FAnimNode_ZEDLiveLinkPose::BuildPoseFromZEDAnimationData(
         FName BoneName = TransformedBoneNames[i];
 
         if (!BoneName.ToString().ToLower().Contains("conf")) { // ignore kp confidence stored as kp
+            // 获得当前joint
             FTransform BoneTransform = InFrameData->Transforms[i];
             FCompactPoseBoneIndex CPIndex = GetCPIndex(i, OutPose, TransformedBoneNames);
             if (CPIndex != INDEX_NONE)
@@ -314,6 +318,7 @@ void FAnimNode_ZEDLiveLinkPose::BuildPoseFromZEDAnimationData(
                 }
 
                 // Retrieves the default reference pose for the skeleton. Live Link data contains relative transforms from the default pose.
+                // 这一步是绝对旋转，rotation[motion相对reset-pose的旋转] * reset-pose的旋转
                 FQuat FinalRotation = Rotation * OutPose[CPIndex].GetRotation();
                 OutPose[CPIndex].SetRotation(FinalRotation);
                 OutPose[CPIndex].SetTranslation(Translation);
@@ -382,7 +387,7 @@ void FAnimNode_ZEDLiveLinkPose::Evaluate_AnyThread(FPoseContext& Output)
         if (LiveLinkClient_AnyThread->DoesSubjectSupportsRole_AnyThread(LiveLinkSubjectName, ULiveLinkAnimationRole::StaticClass()))
         {
             //Process animation data if the subject is from that type
-            // 数据就这样从livelink中来到了这个线程中
+            // 从livelink中，根据LiveLinkSubjectName名称，读取motion数据,并存储在SubjectFrameData中
             if (LiveLinkClient_AnyThread->EvaluateFrame_AnyThread(LiveLinkSubjectName, ULiveLinkAnimationRole::StaticClass(), SubjectFrameData))
             {
                 FLiveLinkSkeletonStaticData* SkeletonData = SubjectFrameData.StaticData.Cast<FLiveLinkSkeletonStaticData>();
