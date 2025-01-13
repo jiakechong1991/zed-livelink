@@ -66,7 +66,7 @@ public:
     FTransform CameraTransform;
 
     // Animation data
-    TArray<FTransform> BoneTransform;  // 骨骼动画数据 都在这里
+    TArray<FTransform> BoneTransform;  // 骨骼动画数据 都在这里，一共 38*2个元素:38个joint和对应的38个置信度
     TArray<int>ParentsIdx;
     int NbKeypoints = -1;
     TMap<int, FName> Keypoints;

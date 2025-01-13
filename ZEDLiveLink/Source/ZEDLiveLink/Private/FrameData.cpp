@@ -142,7 +142,7 @@ void FrameData::Deserialize(TSharedRef<TJsonReader<>> Reader)
                 NbKeypoints = 38;
                 Keypoints = Keypoints38;
                 ParentsIdx = Parents38Idx;
-                TargetBones = TargetBone38;
+                TargetBones = TargetBone38; 
             }
 
             // 解析 Root transform of the skeleton
@@ -183,10 +183,11 @@ void FrameData::Deserialize(TSharedRef<TJsonReader<>> Reader)
             
             // 将root骨骼点的位姿推到 boneTransform中
             RootTransform = ConvertCoordinateSystemToUE(CoordinateSystem, RootTransform);
-            BoneTransform.Push(RootTransform);
+            BoneTransform.Push(RootTransform); // 0-joint
             UE_LOG(LogTemp, Warning, TEXT("--bbb---%s"), *RootTransform.ToString());
 
             // Local position and rotation of each keypoint
+            // NbKeypoints=38（或者34），所以这里是1～37个joint (0是前面的root)
             for (int i = 1; i < NbKeypoints; i++)  // 逐个关节，把他们的位姿 push到 BoneTransform中
             {
                 FQuat Orientation = FQuat(
@@ -224,6 +225,7 @@ void FrameData::Deserialize(TSharedRef<TJsonReader<>> Reader)
             // 将每个追踪点的 置信度读取到
             TArray< TSharedPtr<FJsonValue>> KeypointConfidence = JsonObject->GetArrayField(FString("keypoint_confidence"));
 
+            // NbKeypoints=38（或者34），所以这里是0～37，0是root
             for (int i = 0; i < NbKeypoints; i++)
             {
                 float Confidence = KeypointConfidence[i]->AsNumber();

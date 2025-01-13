@@ -166,11 +166,13 @@ uint32 FZEDLiveLinkSource::Run()  // 在线程中，独立运行
 					{
 						TSharedPtr<TArray<uint8>, ESPMode::ThreadSafe> ReceivedData = MakeShareable(new TArray<uint8>());
 						ReceivedData->SetNumUninitialized(Read);
+						// 将数据从RecvBuffer中复制到ReceivedData中
 						memcpy(ReceivedData->GetData(), RecvBuffer.GetData(), Read);
-						// 在GameThread线程中，用ProcessReceivedData函数，对 接收到的数据进行处理
+						
+						// 在GameThread线程中，用ProcessReceivedData函数，对 接收到的数据进行处理						
 						AsyncTask(ENamedThreads::GameThread, [this, ReceivedData]() { 
-							ProcessReceivedData(ReceivedData); 
-							});
+							ProcessReceivedData(ReceivedData); // 主处理函数
+						});
 					}
 				}
 			}
@@ -254,6 +256,7 @@ void FZEDLiveLinkSource::ProcessReceivedData(TSharedPtr<TArray<uint8>> ReceivedD
 							}
 							else if (frameData.SubjectRole == ULiveLinkAnimationRole::StaticClass())
 							{
+								// 设置角色的静态骨骼数据
 								UpdateAnimationStaticData(SubjectName, frameData.ParentsIdx, frameData.TargetBones);
 							}
 						}
@@ -274,8 +277,8 @@ void FZEDLiveLinkSource::ProcessReceivedData(TSharedPtr<TArray<uint8>> ReceivedD
 					FrameData = FLiveLinkAnimationFrameData::StaticStruct();
 					FLiveLinkAnimationFrameData& AnimData = *FrameData.Cast<FLiveLinkAnimationFrameData>();
 
-					// 使用动捕数据，更新到角色的transform
 					AnimData.WorldTime = FPlatformTime::Seconds();
+					// 使用motion-cap data，更新到角色的transform
 					AnimData.Transforms = frameData.BoneTransform;
 				}
 
@@ -291,6 +294,7 @@ void FZEDLiveLinkSource::ProcessReceivedData(TSharedPtr<TArray<uint8>> ReceivedD
 	}
 }
 
+// 更新相机的静态数据
 void FZEDLiveLinkSource::UpdateCameraStaticData(FName SubjectName, FTransform CameraPose)
 {
 	FLiveLinkSubjectKey Key = FLiveLinkSubjectKey(SourceGuid, SubjectName);
@@ -306,13 +310,17 @@ void FZEDLiveLinkSource::UpdateCameraStaticData(FName SubjectName, FTransform Ca
 	Client->PushSubjectStaticData_AnyThread(Key, ULiveLinkCameraRole::StaticClass(), MoveTemp(StaticData));
 }
 
+// 更新角色的静态骨骼数据
 void FZEDLiveLinkSource::UpdateAnimationStaticData(FName SubjectName, TArray<int>ParentsIdx, TArray<FName> TargetBones)
 {
+	// 根据 源和角色名称，生成唯一标识，用于在LiveLink系统中唯一标识该角色
 	FLiveLinkSubjectKey Key = FLiveLinkSubjectKey(SourceGuid, SubjectName);
 	FLiveLinkStaticDataStruct StaticData(FLiveLinkSkeletonStaticData::StaticStruct());
+	// 将StaticData 强制转换成FLiveLinkSkeletonStaticData类型的指针
 	FLiveLinkSkeletonStaticData* SkeletonData = StaticData.Cast<FLiveLinkSkeletonStaticData>();
 	SkeletonData->SetBoneNames(TargetBones);
 	SkeletonData->SetBoneParents(ParentsIdx);
+	// 将骨骼数据推送到LiveLink系统中的对应key角色上
 	Client->PushSubjectStaticData_AnyThread(Key, ULiveLinkAnimationRole::StaticClass(), MoveTemp(StaticData));
 }
 

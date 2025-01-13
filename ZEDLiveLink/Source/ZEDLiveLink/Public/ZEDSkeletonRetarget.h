@@ -73,7 +73,7 @@ static TArray<int> Parents34Idx = TArray<int>{
 		24
 };
 
-const TArray<int> Parents38Idx = {
+const TArray<int> Parents38Idx = {  // 每个关键点的父级节点索引
 	-1,
 	0,
 	1,
@@ -225,7 +225,7 @@ const TArray<FName> TargetBone34 = {
 };
 
 static TMap<int, FName> Keypoints38 = TMap<int, FName>{
-	{0, "PELVIS"},
+	{0, "PELVIS"},  // 关键点的名称
 	{1, "SPINE_1"},
 	{2, "SPINE_2"},
 	{3, "SPINE_3"},
@@ -265,7 +265,7 @@ static TMap<int, FName> Keypoints38 = TMap<int, FName>{
 	{37, "RIGHT_HAND_PINKY_1"},
 };
 
-const TArray<FName> TargetBone38 = {
+const TArray<FName> TargetBone38 = {  // joint名称列表
 	"PELVIS",
 	"SPINE_1",
 	"SPINE_2",
