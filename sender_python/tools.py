@@ -44,8 +44,8 @@ def rodrigues2bshapes(pose):
 
 
 if __name__ == "__main__":
-    print(euler2quat(euler_in=[0,0,45]))
-    euler_angle = R.from_euler('XYZ', [0,  0, 45], degrees=True) 
+    print(euler2quat(euler_in=[0,0,0]))
+    euler_angle = R.from_euler('XYZ', [0,  0, 0], degrees=True) 
     print("===轴角表示===")
     print(euler_angle.as_rotvec())
     print(rodrigues2bshapes(euler_angle.as_rotvec()))

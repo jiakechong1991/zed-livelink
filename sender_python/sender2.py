@@ -5,7 +5,7 @@ from time import sleep
 import socket
 import json
 from tools import euler2quat
-ip = "192.168.1.13"
+ip = "192.168.1.2"
 upd_port = 3001
 JOINT_NUM = 38
 
@@ -36,7 +36,7 @@ data_frame = {
     "global_root_posititon": {
         "x": 1000,  # 跟UE的单位是缩放0.1， 这里的10相当于1
         "y": 1000,
-        "z": 100
+        "z": 10
     },
     "id": 1,
     "is_new": true,
@@ -52,10 +52,10 @@ data_frame = {
     ]*JOINT_NUM,
     "local_orientation_per_joint": [
         {
-            "w": -0.22990426421165466,
+            "w": 1,
             "x": 0,
-            "y": 0.8097623586654663,
-            "z": 0.5398415923118591
+            "y": 0,
+            "z": 0
         }
     ]*JOINT_NUM,
     "local_position_per_joint": [
