@@ -3,28 +3,7 @@ import torch
 import copy
 import numpy as np
 import json
-from mathutils import Matrix, Vector, Quaternion, Euler
 
-
-### INICIO --- Inseri para utilizar no WHAM
-def Rodrigues(rotvec):
-    """罗德里格斯公式： 旋转向量 to 旋转矩阵[3*3]"""
-    theta = np.linalg.norm(rotvec)
-    r = (rotvec/theta).reshape(3, 1) if theta > 0. else rotvec
-    cost = np.cos(theta)
-    mat = np.asarray([[0, -r[2], r[1]],
-                    [r[2], 0, -r[0]],
-                    [-r[1], r[0], 0]],dtype=object) #adicionei "",dtype=object" por que estava dando erro
-    return(cost*np.eye(3) + (1-cost)*r.dot(r.T) + np.sin(theta)*mat)
-
-def rodrigues2bshapes(pose):
-    """
-    pose: size [1, 3维度欧拉角]。 这是一帧数据
-    输出： 四元数
-    """
-    rod_rots = np.asarray(pose).reshape(1, 3)
-    qua_rots = [Matrix(Rodrigues(rod_rot)).to_quaternion() for rod_rot in rod_rots]
-    return qua_rots
 
 
 
