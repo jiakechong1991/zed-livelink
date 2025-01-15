@@ -6,7 +6,6 @@ import json
 from tools import rodrigues2bshapes
 
 
-
 data_load = torch.load("./hmr4d_results.pt")
 true = True
 false = False
