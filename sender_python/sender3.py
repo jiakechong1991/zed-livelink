@@ -4,7 +4,7 @@ import copy
 import numpy as np
 import json
 from tools import rodrigues2bshapes
-
+from joint_map import gvh2blender, gvh2plugin, plugin2ue
 
 data_load = torch.load("./hmr4d_results.pt")
 true = True
@@ -21,9 +21,11 @@ frames = trans.shape[0]
 
 now = 0
 
+
+
 body_pose_ = body_pose[now].tolist()
-orient_ = orient[0].tolist()
-trans_ = trans[0].tolist()
+orient_ = orient[now].tolist()
+trans_ = trans[now].tolist()
 format_data = copy.deepcopy(temp)
 #print(orient_)
 #print(rodrigues2bshapes(orient_))  # 这里不对，因为数据文件中的旋转都是轴角表示
@@ -32,13 +34,40 @@ format_data["global_root_orientation"] = rodrigues2bshapes(orient_)  # 四元数
 format_data["global_root_posititon"] = trans_  # 位移
 
 
-all_joint_data = []
-for item_joint in range(int(len(body_pose_)/3)):
+all_joint_data = {gvh_bone_namse[0]: rodrigues2bshapes(orient_)}
+gvh_bone_namse = list(gvh2blender.keys())
+for item_joint in range(1, int(len(body_pose_)/3)+1):
     start_index = 3*item_joint
     end_index = 3*(item_joint+1)
     #print(start_index, end_index)
     print(body_pose_[start_index:end_index])
-    all_joint_data.append(rodrigues2bshapes(body_pose_[start_index:end_index]))
+    all_joint_data[gvh_bone_namse[item_joint]] = rodrigues2bshapes(body_pose_[start_index:end_index])
+print("gvh data full后，joint-num:{a}".format(a=len(all_joint_data)))
+
+
+gvh2plugin_data = {}
+for item_joint_name in all_joint_data:
+    joint_data = all_joint_data[item_joint_name]
+    plugin_joint_name_ = gvh2plugin[item_joint_name]
+    if plugin_joint_name_:
+        gvh2plugin_data[plugin_joint_name_] = joint_data
+print("映射plguin后，joint-num:{a}".format(a=len(gvh2plugin_data)))
+
+
+# plugin2ue_data = {}
+# for item_joint_name in gvh2plugin_data:
+#     joint_data = gvh2plugin_data[item_joint_name]
+#     ue_joint_name_ = plugin2ue[item_joint_name]
+#     if plugin_joint_name_:
+#         plugin2ue_data[ue_joint_name_] = joint_data
+# print("映射plguin后，joint-num:{a}".format(a=len(plugin2ue_data)))
+
+
+
+
+
+
+
 
 format_data["local_orientation_per_joint"] = all_joint_data  # 局部朝向
 
