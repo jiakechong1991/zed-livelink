@@ -5,6 +5,11 @@ from time import sleep
 import socket
 import json
 from tools import euler2quat
+from importlib import reload
+from copy import deepcopy
+import temp_pose
+
+
 ip = "192.168.1.2"
 upd_port = 3001
 JOINT_NUM = 38
@@ -76,15 +81,34 @@ data_frame = {
     "tracking_state": 1
 }
 
+
+
+def merge_pose_data(frame_id):
+    reload(temp_pose)
+    temp_data_frame = deepcopy(data_frame)
+    temp_data_frame["global_root_orientation"] = temp_pose.udf_map["global_root_orientation"]
+    temp_data_frame["global_root_posititon"] = temp_pose.udf_map["global_root_posititon"]
+    temp_data_frame["local_orientation_per_joint"] = [item[2] for item in temp_pose.udf_map["local_orientation_per_joint"]]
+    temp_data_frame["timestamp"] = time.time_ns()
+    temp_data_frame["frame_id"] = frame_id
+    return temp_data_frame
+
+
+
+
+
 with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
     s.connect((ip, upd_port))
+    frame_id = 1
     while True:
         if True:
             #data_str = "hahaha:" + str(time.time())
-            data_str = json.dumps(data_frame)
+            data_str = json.dumps(merge_pose_data(frame_id))
+            frame_id += 1
             print(data_str)
+            print("\n\n")
             s.sendall(data_str.encode())  # 真实的发送数据
-        sleep(0.3)  # 粗糙的控制帧率
+        sleep(3)  # 粗糙的控制帧率
 
  
 
