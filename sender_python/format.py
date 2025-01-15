@@ -72,9 +72,17 @@ if __name__ == "__main__":
 
 
 
+data_load = torch.load("./hmr4d_results.pt")
+body_pose = data_load["smpl_params_global"]["body_pose"]
+orient = data_load["smpl_params_global"]["global_orient"] # root朝向
+trans = data_load["smpl_params_global"]["transl"] # root位移
+
+t=body_pose.tolist()
 
 
-
+new_res = []
+for i in t:
+    new_res.append([ii/np.pi*180 for ii in i])
 
 
 
