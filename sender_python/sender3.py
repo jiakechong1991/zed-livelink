@@ -25,7 +25,7 @@ temp = {"action_state":0,"body_format":2,"confidence":95.0,"coordinate_system":2
 body_pose = data_load["smpl_params_global"]["body_pose"]
 orient = data_load["smpl_params_global"]["global_orient"] # root朝向
 trans = data_load["smpl_params_global"]["transl"] # root位移
-frames = trans.shape[0]  # 总帧率
+frames_len = trans.shape[0]  # 总帧率
 
 
 def create_frame_data(now_frame = 0):
@@ -52,7 +52,7 @@ def create_frame_data(now_frame = 0):
         #print(body_pose_[start_index:end_index])
         gvh_joint_name = gvh_bone_namse[item_joint+1]  # 0是root，所以这里是从1开始的
         plugine_joint_name = gvh2plugin[gvh_joint_name]
-        print("gvh_joint_name:{a}, plugine_joint_name:{b}".format(a=gvh_joint_name, b=plugine_joint_name))
+        #print("gvh_joint_name:{a}, plugine_joint_name:{b}".format(a=gvh_joint_name, b=plugine_joint_name))
         if plugine_joint_name:
             gvh2plugin_joint_data[plugine_joint_name] = rodrigues2bshapes(body_pose_[start_index:end_index])
         else:
@@ -67,7 +67,6 @@ def create_frame_data(now_frame = 0):
         print(temp_joint)
         all_joint_data.append(temp_joint[2])
         counter += 1
-
 
     format_data["local_orientation_per_joint"] = all_joint_data  # 局部朝向
     format_data["global_root_orientation"] = rodrigues2bshapes(orient_)  # 四元数
@@ -86,12 +85,13 @@ with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
     while True:
         if True:
             #data_str = "hahaha:" + str(time.time())
+            assert frame_id < frames_len, u"frame_id必须<frames_len"
             data_str = json.dumps(create_frame_data(frame_id))
             frame_id += 1
             print(data_str)
             print("\n\n")
             s.sendall(data_str.encode())  # 真实的发送数据
-        sleep(3)  # 粗糙的控制帧率
+        sleep(0.3)  # 粗糙的控制帧率
 
 
 

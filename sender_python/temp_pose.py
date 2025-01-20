@@ -2,6 +2,26 @@
 from tools import euler2quat
 
 
+camera_frame = {
+    #
+    # 这里输入 --- 标定 ---UE中的结果    ： y,z轴是反向的
+    # 0,0,90   0, 0, -90
+    # 0,90,0   0, -90, 0
+    # 90,0,0   90, 0, 0 
+    # """
+    "camera_orientation": euler2quat([0,0,0]),
+    "camera_position": {
+        "x": 0,   # 跟UE的单位是缩放0.1， 这里的10相当于1
+        "y": 0,
+        "z": 0
+    },
+    "coordinate_system": 2,
+    "coordinate_unit": 0, # 单位是0，位置缩放为0.1
+    "frame_id": 2002,
+    "role": 1,
+    "serial_number": 8289,
+    "timestamp": 1734958710410477382
+}
 
 udf_map = {
 	"global_root_orientation": euler2quat([0,0,0]), # y, z,x
