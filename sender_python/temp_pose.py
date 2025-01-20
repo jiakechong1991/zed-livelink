@@ -4,15 +4,15 @@ from tools import euler2quat
 
 
 udf_map = {
-	"global_root_orientation": euler2quat([0,0,0]),
+	"global_root_orientation": euler2quat([0,0,0]), # y, z,x
 	"global_root_posititon": {
         "x": 1000,  # 跟UE的单位是缩放0.1， 这里的10相当于1
         "y": 1000,
         "z": 10
     },
 	"local_orientation_per_joint": [
-		[0, "PELVIS", euler2quat([0,0,45])],
-		[1, "SPINE_1", euler2quat([0,0,45])],
+		[0, "PELVIS", euler2quat([0,0,0])],
+		[1, "SPINE_1", euler2quat([0,0,0])],
 		[2, "SPINE_2", euler2quat([0,0,0])],
 		[3, "SPINE_3", euler2quat([0,0,0])],
 		[4, "NECK", euler2quat([0,0,0])],
@@ -25,7 +25,7 @@ udf_map = {
 		[11, "RIGHT_CLAVICLE", euler2quat([0,0,0])],
 		[12, "LEFT_SHOULDER", euler2quat([0,0,0])],
 		[13, "RIGHT_SHOULDER", euler2quat([0,0,0])],
-		[14, "LEFT_ELBOW", euler2quat([0,0,0])],
+		[14, "LEFT_ELBOW", euler2quat([0,0,0])],  # y,z,x
 		[15, "RIGHT_ELBOW", euler2quat([0,0,0])],
 		[16, "LEFT_WRIST", euler2quat([0,0,0])],
 		[17, "RIGHT_WRIST", euler2quat([0,0,0])],
@@ -52,7 +52,7 @@ udf_map = {
 	]
 }
 
-
+JOINT_NUM = len(udf_map["local_orientation_per_joint"])
 
 
 

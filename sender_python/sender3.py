@@ -3,8 +3,9 @@ import torch
 import copy
 import numpy as np
 import json
-from tools import rodrigues2bshapes
+from tools import rodrigues2bshapes, euler2quat
 from joint_map import gvh2blender, gvh2plugin, plugin2ue
+from temp_pose import JOINT_NUM
 
 data_load = torch.load("./hmr4d_results.pt")
 true = True
@@ -34,33 +35,28 @@ format_data["global_root_orientation"] = rodrigues2bshapes(orient_)  # 四元数
 format_data["global_root_posititon"] = trans_  # 位移
 
 
-all_joint_data = {gvh_bone_namse[0]: rodrigues2bshapes(orient_)}
-gvh_bone_namse = list(gvh2blender.keys())
-for item_joint in range(1, int(len(body_pose_)/3)+1):
+"""
+将22个joint映射成 {plugin_joint_name: 姿势}
+"""
+gvh_bone_namse = list(gvh2plugin.keys())
+gvh2plugin_joint_data = {}
+for item_joint in range(0, int(len(body_pose_)/3)):
     start_index = 3*item_joint
     end_index = 3*(item_joint+1)
-    #print(start_index, end_index)
+    print(start_index, end_index)
     print(body_pose_[start_index:end_index])
-    all_joint_data[gvh_bone_namse[item_joint]] = rodrigues2bshapes(body_pose_[start_index:end_index])
-print("gvh data full后，joint-num:{a}".format(a=len(all_joint_data)))
+    plugine_joint_name = gvh2plugin[gvh_bone_namse[item_joint]]
+    gvh2plugin_joint_data[plugine_joint_name] = rodrigues2bshapes(
+        body_pose_[start_index:end_index])
+print("gvh data full后，joint-num:{a}".format(a=len(gvh2plugin_joint_data)))
 
-
-gvh2plugin_data = {}
-for item_joint_name in all_joint_data:
-    joint_data = all_joint_data[item_joint_name]
-    plugin_joint_name_ = gvh2plugin[item_joint_name]
-    if plugin_joint_name_:
-        gvh2plugin_data[plugin_joint_name_] = joint_data
-print("映射plguin后，joint-num:{a}".format(a=len(gvh2plugin_data)))
-
-
-# plugin2ue_data = {}
-# for item_joint_name in gvh2plugin_data:
-#     joint_data = gvh2plugin_data[item_joint_name]
-#     ue_joint_name_ = plugin2ue[item_joint_name]
-#     if plugin_joint_name_:
-#         plugin2ue_data[ue_joint_name_] = joint_data
-# print("映射plguin后，joint-num:{a}".format(a=len(plugin2ue_data)))
+all_joint_data = []  # [0, "PELVIS", euler2quat([0,0,0])], 共38组
+counter = 0
+for plugin_joint_index in plugin2ue:
+    temp_joint = [counter, plugin_joint_index,
+                  gvh2plugin_joint_data.get(plugin_joint_index, euler2quat([0,0,0]))]
+    print(temp_joint)
+    all_joint_data.append(temp_joint)
 
 
 
@@ -71,7 +67,7 @@ print("映射plguin后，joint-num:{a}".format(a=len(gvh2plugin_data)))
 
 format_data["local_orientation_per_joint"] = all_joint_data  # 局部朝向
 
-print(format_data)
+# print(format_data)
 
 
 
@@ -100,17 +96,17 @@ if __name__ == "__main__":
 
 
 
-data_load = torch.load("./hmr4d_results.pt")
-body_pose = data_load["smpl_params_global"]["body_pose"]
-orient = data_load["smpl_params_global"]["global_orient"] # root朝向
-trans = data_load["smpl_params_global"]["transl"] # root位移
+# data_load = torch.load("./hmr4d_results.pt")
+# body_pose = data_load["smpl_params_global"]["body_pose"]
+# orient = data_load["smpl_params_global"]["global_orient"] # root朝向
+# trans = data_load["smpl_params_global"]["transl"] # root位移
 
-t=body_pose.tolist()
+# t=body_pose.tolist()
 
 
-new_res = []
-for i in t:
-    new_res.append([ii/np.pi*180 for ii in i])
+# new_res = []
+# for i in t:
+#     new_res.append([ii/np.pi*180 for ii in i])
 
 
 

@@ -30,7 +30,7 @@ def rodrigues2bshapes(pose):  # 输入旋转向量，输出四元数
     }
 
     return res
-def euler2quat(euler_in): # 输入角度，获得四元数
+def euler2quat(euler_in): # 输入欧拉角度，获得四元数
     assert len(euler_in) == 3, u"euler_in是欧拉角表示，len必须是3"
     euler_angle = R.from_euler('XYZ', euler_in, degrees=True) 
     #euler_angle = R.from_euler('XYZ', [0,  0, 30], degrees=True) 

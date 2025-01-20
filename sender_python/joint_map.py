@@ -30,7 +30,8 @@ gvh2blender = {
 }
 
 gvh2plugin = {
-    'root': 'root', 
+    'root': None, # 'root', # 对应双脚中心的投影点那个坐标
+	#gvh-joint,   plugin-joint,  blender-joint
     'bone_00':  "PELVIS", #'Pelvis', 
     'bone_01':  "LEFT_HIP", # 'L_Hip', 
     'bone_02':  "RIGHT_HIP", # 'R_Hip', 
@@ -38,15 +39,15 @@ gvh2plugin = {
     'bone_04':  "LEFT_KNEE", # 'L_Knee', 
     'bone_05':  "RIGHT_KNEE", #'R_Knee', 
     'bone_06':  "SPINE_2", # 'Spine2', 
-    'bone_07':  "LEFT_ANKLE", # 'L_Ankle', 
+    'bone_07':  "LEFT_ANKLE", # 'L_Ankle', (脚踝，大圆骨)
     'bone_08':  "RIGHT_ANKLE", # 'R_Ankle', 
     'bone_09':  "SPINE_3", #'Spine3', 
-    'bone_10':  'L_Foot', 
-    'bone_11':  'R_Foot', 
+    'bone_10':  "LEFT_BIG_TOE", # 'L_Foot',  (脚 大拇指前端)
+    'bone_11':  "RIGHT_BIG_TOE",  #'R_Foot', 
     'bone_12':  "NECK", # 'Neck', 
-    'bone_13':  'L_Collar', 
-    'bone_14':  'R_Collar', 
-    'bone_15':  'Head', 
+    'bone_13':  None, #'L_Collar', 
+    'bone_14':  None, # 'R_Collar', 
+    'bone_15':  None,  #'Head', 
     'bone_16':  "LEFT_SHOULDER", #'L_Shoulder', 
     'bone_17':  "RIGHT_SHOULDER", #'R_Shoulder',
     'bone_18':  "LEFT_ELBOW", # 'L_Elbow', 
@@ -57,6 +58,7 @@ gvh2plugin = {
     #'bone_23':  'R_Hand',
 }
 
+# 这个表，真正生效是在 ue的蓝图中，这里只是映射说明
 plugin2ue = {
 	"PELVIS": "hips", # 髋关节
 	"SPINE_1": "spine", # 脊柱1

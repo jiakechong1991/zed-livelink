@@ -10,7 +10,7 @@ from copy import deepcopy
 import temp_pose
 
 
-ip = "192.168.1.2"
+ip = "192.168.1.10"
 upd_port = 3001
 JOINT_NUM = 38
 
@@ -108,7 +108,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
             print(data_str)
             print("\n\n")
             s.sendall(data_str.encode())  # 真实的发送数据
-        sleep(3)  # 粗糙的控制帧率
+        sleep(0.3)  # 粗糙的控制帧率
 
  
 
