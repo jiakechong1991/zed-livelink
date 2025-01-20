@@ -29,6 +29,7 @@ gvh2blender = {
     #'bone_23':  'R_Hand',
 }
 
+# python3.7后，dict就是有序的，所以不用再关注顺序
 gvh2plugin = {
     'root': None, # 'root', # 对应双脚中心的投影点那个坐标
 	#gvh-joint,   plugin-joint,  blender-joint

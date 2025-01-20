@@ -1,11 +1,18 @@
 # -*- coding:utf-8 -*-
 import torch
 import copy
+import time
+from time import sleep
+import socket
+import json
 import numpy as np
 import json
 from tools import rodrigues2bshapes, euler2quat
 from joint_map import gvh2blender, gvh2plugin, plugin2ue
 from temp_pose import JOINT_NUM
+
+ip = "192.168.1.10"
+upd_port = 3001
 
 data_load = torch.load("./hmr4d_results.pt")
 true = True
@@ -18,63 +25,73 @@ temp = {"action_state":0,"body_format":2,"confidence":95.0,"coordinate_system":2
 body_pose = data_load["smpl_params_global"]["body_pose"]
 orient = data_load["smpl_params_global"]["global_orient"] # root朝向
 trans = data_load["smpl_params_global"]["transl"] # root位移
-frames = trans.shape[0]
-
-now = 0
+frames = trans.shape[0]  # 总帧率
 
 
+def create_frame_data(now_frame = 0):
 
-body_pose_ = body_pose[now].tolist()
-orient_ = orient[now].tolist()
-trans_ = trans[now].tolist()
-format_data = copy.deepcopy(temp)
-#print(orient_)
-#print(rodrigues2bshapes(orient_))  # 这里不对，因为数据文件中的旋转都是轴角表示
+    body_pose_ = body_pose[now_frame].tolist()
+    orient_ = orient[now_frame].tolist()
+    trans_ = trans[now_frame].tolist()
+    format_data = copy.deepcopy(temp)
+    #print(orient_)
+    #print(rodrigues2bshapes(orient_))  # 这里不对，因为数据文件中的旋转都是轴角表示
 
-format_data["global_root_orientation"] = rodrigues2bshapes(orient_)  # 四元数
-format_data["global_root_posititon"] = trans_  # 位移
+    """
+    将22个joint映射成 {plugin_joint_name: 姿势}
+    """
+    gvh_bone_namse = list(gvh2plugin.keys())
+    # print(gvh_bone_namse)
+    # print("________")
+    gvh2plugin_joint_data = {}
+    for item_joint in range(0, int(len(body_pose_)/3)):
+        assert item_joint <= 21,u"joint-num是22个"
+        start_index = 3*item_joint
+        end_index = 3*(item_joint+1)
+        #print(start_index, end_index)
+        #print(body_pose_[start_index:end_index])
+        gvh_joint_name = gvh_bone_namse[item_joint+1]  # 0是root，所以这里是从1开始的
+        plugine_joint_name = gvh2plugin[gvh_joint_name]
+        print("gvh_joint_name:{a}, plugine_joint_name:{b}".format(a=gvh_joint_name, b=plugine_joint_name))
+        if plugine_joint_name:
+            gvh2plugin_joint_data[plugine_joint_name] = rodrigues2bshapes(body_pose_[start_index:end_index])
+        else:
+            print("miss joint:{a}".format(a=gvh_joint_name))
+    print("匹配到的plugin关节num：{a}".format(a=len(gvh2plugin_joint_data)))
 
-
-"""
-将22个joint映射成 {plugin_joint_name: 姿势}
-"""
-gvh_bone_namse = list(gvh2plugin.keys())
-gvh2plugin_joint_data = {}
-for item_joint in range(0, int(len(body_pose_)/3)):
-    start_index = 3*item_joint
-    end_index = 3*(item_joint+1)
-    print(start_index, end_index)
-    print(body_pose_[start_index:end_index])
-    plugine_joint_name = gvh2plugin[gvh_bone_namse[item_joint]]
-    gvh2plugin_joint_data[plugine_joint_name] = rodrigues2bshapes(
-        body_pose_[start_index:end_index])
-print("gvh data full后，joint-num:{a}".format(a=len(gvh2plugin_joint_data)))
-
-all_joint_data = []  # [0, "PELVIS", euler2quat([0,0,0])], 共38组
-counter = 0
-for plugin_joint_index in plugin2ue:
-    temp_joint = [counter, plugin_joint_index,
-                  gvh2plugin_joint_data.get(plugin_joint_index, euler2quat([0,0,0]))]
-    print(temp_joint)
-    all_joint_data.append(temp_joint)
-
-
-
-
-
-
-
-
-format_data["local_orientation_per_joint"] = all_joint_data  # 局部朝向
-
-# print(format_data)
+    all_joint_data = []  # [0, "PELVIS", euler2quat([0,0,0])], 共38组
+    counter = 0
+    for plugin_joint_index in plugin2ue:
+        temp_joint = [counter, plugin_joint_index,
+                    gvh2plugin_joint_data.get(plugin_joint_index, euler2quat([0,0,0]))]
+        print(temp_joint)
+        all_joint_data.append(temp_joint[2])
+        counter += 1
 
 
-
+    format_data["local_orientation_per_joint"] = all_joint_data  # 局部朝向
+    format_data["global_root_orientation"] = rodrigues2bshapes(orient_)  # 四元数
+    format_data["global_root_posititon"] = trans_  # 位移
+    format_data["timestamp"] = time.time_ns()
+    format_data["frame_id"] = now_frame
+    # print(format_data)
+    return format_data
 
 
 
 
+with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+    s.connect((ip, upd_port))
+    frame_id = 0
+    while True:
+        if True:
+            #data_str = "hahaha:" + str(time.time())
+            data_str = json.dumps(create_frame_data(frame_id))
+            frame_id += 1
+            print(data_str)
+            print("\n\n")
+            s.sendall(data_str.encode())  # 真实的发送数据
+        sleep(3)  # 粗糙的控制帧率
 
 
 
@@ -84,29 +101,6 @@ format_data["local_orientation_per_joint"] = all_joint_data  # 局部朝向
 
 
 
-
-
-
-
-
-
-if __name__ == "__main__":
-    pass
-
-
-
-
-# data_load = torch.load("./hmr4d_results.pt")
-# body_pose = data_load["smpl_params_global"]["body_pose"]
-# orient = data_load["smpl_params_global"]["global_orient"] # root朝向
-# trans = data_load["smpl_params_global"]["transl"] # root位移
-
-# t=body_pose.tolist()
-
-
-# new_res = []
-# for i in t:
-#     new_res.append([ii/np.pi*180 for ii in i])
 
 
 
