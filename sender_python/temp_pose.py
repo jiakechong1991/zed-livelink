@@ -32,7 +32,7 @@ udf_map = {
     },
 	"local_orientation_per_joint": [
 		[0, "PELVIS", euler2quat([0,0,0])],
-		[1, "SPINE_1", euler2quat([0,0,0])],
+		[1, "SPINE_1", euler2quat([0,0,45])], # y,z,x
 		[2, "SPINE_2", euler2quat([0,0,0])],
 		[3, "SPINE_3", euler2quat([0,0,0])],
 		[4, "NECK", euler2quat([0,0,0])],
