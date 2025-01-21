@@ -384,11 +384,13 @@ void FAnimNode_ZEDLiveLinkPose::Evaluate_AnyThread(FPoseContext& Output)
 
     if (SubjectRole)
     {
+        // 如果解析出来是animationRole角色
         if (LiveLinkClient_AnyThread->DoesSubjectSupportsRole_AnyThread(LiveLinkSubjectName, ULiveLinkAnimationRole::StaticClass()))
         {
             //Process animation data if the subject is from that type
             // 从livelink中，根据LiveLinkSubjectName名称，读取motion数据,并存储在SubjectFrameData中
-            if (LiveLinkClient_AnyThread->EvaluateFrame_AnyThread(LiveLinkSubjectName, ULiveLinkAnimationRole::StaticClass(), SubjectFrameData))
+            if (LiveLinkClient_AnyThread->EvaluateFrame_AnyThread(
+                LiveLinkSubjectName, ULiveLinkAnimationRole::StaticClass(), SubjectFrameData))
             {
                 FLiveLinkSkeletonStaticData* SkeletonData = SubjectFrameData.StaticData.Cast<FLiveLinkSkeletonStaticData>();
                 FLiveLinkAnimationFrameData* FrameData = SubjectFrameData.FrameData.Cast<FLiveLinkAnimationFrameData>();
@@ -398,6 +400,9 @@ void FAnimNode_ZEDLiveLinkPose::Evaluate_AnyThread(FPoseContext& Output)
                 BuildPoseFromZEDAnimationData(CachedDeltaTime, SkeletonData, FrameData, Output.Pose);
 
                 CachedDeltaTime = 0.f; // Reset so that if we evaluate again we don't "create" time inside of the retargeter
+            }else{ // 还有一种camera数据，需要解析
+                UE_LOG(LogTemp, Warning, TEXT("LiveLinkSubjectName: %s, SubjectRole: %s, SubjectFrameData: %s"), 
+                    *LiveLinkSubjectName.Name.ToString(), *SubjectRole->GetName(), *SubjectFrameData.ToString());
             }
         }
     }
